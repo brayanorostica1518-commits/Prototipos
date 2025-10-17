@@ -431,7 +431,7 @@ def extract_gaps(ai_response: str, frameworks: List[str]) -> List[dict]:
             continue
         
         # Exit gaps section on next major section
-        if in_gaps_section and stripped.match(r'^[0-9]+\.\s+[A-Z]') and 'GAP' not in stripped.upper():
+        if in_gaps_section and re.match(r'^[0-9]+\.\s+[A-Z]', stripped) and 'GAP' not in stripped.upper():
             in_gaps_section = False
         
         if in_gaps_section and stripped:
