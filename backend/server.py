@@ -76,6 +76,48 @@ class Session(BaseModel):
 UPLOAD_DIR = Path("/tmp/assessment_uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
+def extract_text_from_excel(file_path: Path) -> str:
+    """Extract text content from Excel file"""
+    try:
+        wb = openpyxl.load_workbook(file_path, data_only=True)
+        text_content = []
+        
+        for sheet_name in wb.sheetnames:
+            sheet = wb[sheet_name]
+            text_content.append(f"\\n=== Hoja: {sheet_name} ===\\n")
+            
+            for row in sheet.iter_rows(values_only=True):
+                row_text = " | ".join([str(cell) if cell is not None else "" for cell in row])
+                if row_text.strip():
+                    text_content.append(row_text)
+        
+        return "\\n".join(text_content)
+    except Exception as e:
+        logger.error(f"Error extracting Excel: {str(e)}")
+        return f"Error al leer archivo Excel: {str(e)}"
+
+def extract_text_from_word(file_path: Path) -> str:
+    """Extract text content from Word file"""
+    try:
+        doc = Document(file_path)
+        text_content = []
+        
+        for para in doc.paragraphs:
+            if para.text.strip():
+                text_content.append(para.text)
+        
+        # Also extract text from tables
+        for table in doc.tables:
+            for row in table.rows:
+                row_text = " | ".join([cell.text for cell in row.cells])
+                if row_text.strip():
+                    text_content.append(row_text)
+        
+        return "\\n".join(text_content)
+    except Exception as e:
+        logger.error(f"Error extracting Word: {str(e)}")
+        return f"Error al leer archivo Word: {str(e)}"
+
 @api_router.get("/")
 async def root():
     return {"message": "Assessment AI API Ready"}
