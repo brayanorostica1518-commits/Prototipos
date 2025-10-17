@@ -364,11 +364,21 @@ export default function Dashboard() {
           </div>
           <Button
             onClick={exportToPDF}
-            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md"
+            disabled={exporting}
+            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md disabled:opacity-50"
             data-testid="export-pdf-btn"
           >
-            <Download className="w-4 h-4 mr-2" />
-            Exportar PDF
+            {exporting ? (
+              <>
+                <FileText className="w-4 h-4 mr-2 animate-pulse" />
+                Generando...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Descargar Reporte Completo
+              </>
+            )}
           </Button>
         </div>
 
