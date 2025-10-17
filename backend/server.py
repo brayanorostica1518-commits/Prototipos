@@ -12,6 +12,9 @@ from datetime import datetime, timezone
 import tempfile
 import shutil
 from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
+import openpyxl
+from docx import Document
+import csv
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
