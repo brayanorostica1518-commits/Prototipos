@@ -70,7 +70,7 @@ export default function Dashboard() {
       `${score}%`
     ]);
     
-    doc.autoTable({
+    autoTable(doc, {
       startY: 50,
       head: [['Marco Normativo', 'Cumplimiento']],
       body: complianceData,
@@ -86,7 +86,7 @@ export default function Dashboard() {
       gap.severity
     ]);
     
-    doc.autoTable({
+    autoTable(doc, {
       startY: finalY + 5,
       head: [['Framework', 'Descripción', 'Severidad']],
       body: gapsData,
