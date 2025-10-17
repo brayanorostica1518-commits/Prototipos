@@ -20,7 +20,13 @@ const FRAMEWORKS = [
   { id: "COBIT", label: "COBIT - Gobernanza de TI" },
   { id: "SOC 2", label: "SOC 2 - Service Organization Control" },
   { id: "GDPR", label: "GDPR - Protección de Datos" },
-  { id: "PCI DSS", label: "PCI DSS - Seguridad de Datos de Tarjetas" }
+  { id: "PCI DSS", label: "PCI DSS - Seguridad de Datos de Tarjetas" },
+  { id: "OWASP Top 10", label: "OWASP Top 10 - Vulnerabilidades Web" },
+  { id: "OWASP ASVS", label: "OWASP ASVS - Verificación de Seguridad" },
+  { id: "OWASP Mobile", label: "OWASP Mobile - Seguridad Móvil" },
+  { id: "MITRE ATT&CK", label: "MITRE ATT&CK - Tácticas y Técnicas" },
+  { id: "CIS Controls", label: "CIS Controls - Controles Críticos" },
+  { id: "SANS Top 25", label: "SANS Top 25 - Errores de Software" }
 ];
 
 const formatAIResponse = (text) => {
