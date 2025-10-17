@@ -376,38 +376,96 @@ async def get_session_analysis(session_id: str):
     return analysis or {}
 
 def extract_compliance_scores(ai_response: str, frameworks: List[str]) -> dict:
-    """Extract compliance scores from AI response (simple heuristic)"""
+    """Extract compliance scores from AI response with better pattern matching"""
     scores = {}
     
-    # Simple pattern matching for percentages
     import re
     for framework in frameworks:
-        pattern = rf"{framework}[:\s]+([0-9]+)%"
-        match = re.search(pattern, ai_response, re.IGNORECASE)
-        if match:
-            scores[framework] = int(match.group(1))
-        else:
-            # Default to 70 if not found
-            scores[framework] = 70
+        # Try multiple patterns to find the score
+        patterns = [
+            rf"{re.escape(framework)}[:\s]+([0-9]+)%",
+            rf"{re.escape(framework)}.*?([0-9]+)%",
+            # Handle abbreviated versions
+            rf"{framework.split()[0]}[:\s]+([0-9]+)%"
+        ]
+        
+        found = False
+        for pattern in patterns:
+            match = re.search(pattern, ai_response, re.IGNORECASE)
+            if match:
+                scores[framework] = int(match.group(1))
+                found = True
+                break
+        
+        if not found:
+            # Try to find any percentage in the vicinity of the framework name
+            framework_pos = ai_response.lower().find(framework.lower())
+            if framework_pos != -1:
+                # Look in the next 100 characters
+                snippet = ai_response[framework_pos:framework_pos+100]
+                percentage_match = re.search(r'([0-9]+)%', snippet)
+                if percentage_match:
+                    scores[framework] = int(percentage_match.group(1))
+                else:
+                    scores[framework] = 75  # Default
+            else:
+                scores[framework] = 75  # Default
     
     return scores
 
 def extract_gaps(ai_response: str, frameworks: List[str]) -> List[dict]:
-    """Extract gaps from AI response (simple heuristic)"""
+    """Extract gaps from AI response with better parsing"""
     gaps = []
     
-    # Look for gap-related keywords
+    # Split by sections and find gaps section
     lines = ai_response.split('\n')
+    in_gaps_section = False
+    current_gap = {}
+    
     for line in lines:
-        if any(keyword in line.lower() for keyword in ['gap', 'deficiencia', 'falta', 'ausencia', 'recomendación', 'recommendation']):
-            for framework in frameworks:
-                if framework.lower() in line.lower():
-                    gaps.append({
-                        "framework": framework,
-                        "description": line.strip(),
-                        "severity": "medium"
-                    })
-                    break
+        stripped = line.strip()
+        
+        # Detect gaps section
+        if 'GAPS' in stripped.upper() or 'CRÍTICOS' in stripped.upper():
+            in_gaps_section = True
+            continue
+        
+        # Exit gaps section on next major section
+        if in_gaps_section and stripped.match(r'^[0-9]+\.\s+[A-Z]') and 'GAP' not in stripped.upper():
+            in_gaps_section = False
+        
+        if in_gaps_section and stripped:
+            # Parse gap details
+            if stripped.startswith('Framework:'):
+                if current_gap:
+                    gaps.append(current_gap)
+                current_gap = {"framework": stripped.replace('Framework:', '').strip()}
+            elif stripped.startswith('Gap:'):
+                current_gap["description"] = stripped.replace('Gap:', '').strip()
+            elif stripped.startswith('Impacto:'):
+                impact = stripped.replace('Impacto:', '').strip().lower()
+                current_gap["severity"] = "high" if "alto" in impact else "medium" if "medio" in impact else "low"
+            elif stripped.startswith('Recomendación:') or stripped.startswith('Recomendacion:'):
+                current_gap["recommendation"] = stripped.split(':', 1)[1].strip()
+    
+    # Add last gap if exists
+    if current_gap and "description" in current_gap:
+        gaps.append(current_gap)
+    
+    # If no gaps found with structured parsing, fall back to keyword search
+    if not gaps:
+        for line in lines:
+            if any(keyword in line.lower() for keyword in ['gap', 'deficiencia', 'falta', 'crítico']):
+                for framework in frameworks:
+                    if framework.lower() in line.lower() or framework.split()[0].lower() in line.lower():
+                        gaps.append({
+                            "framework": framework,
+                            "description": line.strip(),
+                            "severity": "medium"
+                        })
+                        break
+    
+    return gaps[:15]  # Limit to 15 gaps
     
     # If no gaps found, add generic ones
     if not gaps:
