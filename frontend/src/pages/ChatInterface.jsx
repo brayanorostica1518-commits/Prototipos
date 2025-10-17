@@ -13,9 +13,14 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const FRAMEWORKS = [
-  { id: "ISO 27001", label: "ISO 27001" },
-  { id: "NIST", label: "NIST" },
-  { id: "COBIT", label: "COBIT" }
+  { id: "ISO 27001", label: "ISO 27001 - Seguridad de la Información" },
+  { id: "ISO 9001", label: "ISO 9001 - Gestión de Calidad" },
+  { id: "ISO 45001", label: "ISO 45001 - Seguridad y Salud Ocupacional" },
+  { id: "NIST CSF", label: "NIST CSF - Cybersecurity Framework" },
+  { id: "COBIT", label: "COBIT - Gobernanza de TI" },
+  { id: "SOC 2", label: "SOC 2 - Service Organization Control" },
+  { id: "GDPR", label: "GDPR - Protección de Datos" },
+  { id: "PCI DSS", label: "PCI DSS - Seguridad de Datos de Tarjetas" }
 ];
 
 export default function ChatInterface() {
