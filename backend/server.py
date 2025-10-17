@@ -181,31 +181,44 @@ async def analyze_assessment(data: dict):
         frameworks = data['frameworks']
         file_ids = data.get('file_ids', [])
         
-        # Prepare file attachments
+        # Prepare file attachments and extracted text
         file_contents = []
         file_names = []
+        extracted_texts = []
+        
+        # Gemini-supported mime types for direct file upload
+        gemini_supported = {'.pdf', '.csv', '.txt'}
         
         for file_info in file_ids:
             file_path = Path(file_info['path'])
             if file_path.exists():
-                # Determine mime type
                 ext = file_path.suffix.lower()
-                mime_map = {
-                    '.pdf': 'application/pdf',
-                    '.csv': 'text/csv',
-                    '.txt': 'text/plain',
-                    '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                    '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                    '.xls': 'application/vnd.ms-excel',
-                    '.doc': 'application/msword'
-                }
-                mime_type = mime_map.get(ext, 'application/octet-stream')
-                
-                file_contents.append(FileContentWithMimeType(
-                    file_path=str(file_path),
-                    mime_type=mime_type
-                ))
                 file_names.append(file_info['original_name'])
+                
+                # Handle files based on type
+                if ext in gemini_supported:
+                    # Direct upload for supported formats
+                    mime_map = {
+                        '.pdf': 'application/pdf',
+                        '.csv': 'text/csv',
+                        '.txt': 'text/plain'
+                    }
+                    mime_type = mime_map.get(ext, 'text/plain')
+                    
+                    file_contents.append(FileContentWithMimeType(
+                        file_path=str(file_path),
+                        mime_type=mime_type
+                    ))
+                elif ext in ['.xlsx', '.xls']:
+                    # Extract text from Excel
+                    text = extract_text_from_excel(file_path)
+                    extracted_texts.append(f"\\n=== Contenido de {file_info['original_name']} ===\\n{text}")
+                elif ext in ['.docx', '.doc']:
+                    # Extract text from Word
+                    text = extract_text_from_word(file_path)
+                    extracted_texts.append(f"\\n=== Contenido de {file_info['original_name']} ===\\n{text}")
+                else:
+                    extracted_texts.append(f"\\nArchivo no soportado: {file_info['original_name']}")
         
         # Build system message with framework context
         frameworks_text = ", ".join(frameworks)
@@ -220,7 +233,7 @@ async def analyze_assessment(data: dict):
         
         Responde en español de forma estructurada y profesional."""
         
-        # Initialize LLM Chat with Gemini (supports file attachments)
+        # Initialize LLM Chat with Gemini
         chat = LlmChat(
             api_key=os.environ['EMERGENT_LLM_KEY'],
             session_id=session_id,
@@ -228,9 +241,13 @@ async def analyze_assessment(data: dict):
         ).with_model("gemini", "gemini-2.0-flash")
         
         # Build user message
-        user_text = f"{message_content}\n\nMarcos a evaluar: {frameworks_text}"
+        user_text = f"{message_content}\\n\\nMarcos a evaluar: {frameworks_text}"
         if file_names:
-            user_text += f"\n\nArchivos adjuntos: {', '.join(file_names)}"
+            user_text += f"\\n\\nArchivos adjuntos: {', '.join(file_names)}"
+        
+        # Add extracted text if any
+        if extracted_texts:
+            user_text += "\\n\\n" + "\\n".join(extracted_texts)
         
         user_message = UserMessage(
             text=user_text,
