@@ -283,7 +283,13 @@ export default function ChatInterface() {
                             ))}
                           </div>
                         )}
-                        <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
+                        {msg.role === "assistant" ? (
+                          <div className="formatted-response">
+                            {formatAIResponse(msg.content)}
+                          </div>
+                        ) : (
+                          <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
+                        )}
                       </div>
                     </div>
                   ))
