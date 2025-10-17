@@ -23,6 +23,70 @@ const FRAMEWORKS = [
   { id: "PCI DSS", label: "PCI DSS - Seguridad de Datos de Tarjetas" }
 ];
 
+const formatAIResponse = (text) => {
+  const lines = text.split('\n');
+  const formatted = [];
+  let currentSection = null;
+  
+  lines.forEach((line, idx) => {
+    const trimmed = line.trim();
+    
+    // Section headers (ALL CAPS or numbered sections)
+    if (trimmed.match(/^[0-9]+\.\s+[A-ZÁÉÍÓÚÑ\s]+$/) || trimmed.match(/^[A-ZÁÉÍÓÚÑ\s]{10,}$/)) {
+      formatted.push(
+        <div key={idx} className="mt-6 mb-3 pb-2 border-b-2 border-blue-200">
+          <h3 className="text-lg font-bold text-blue-700" style={{ fontFamily: 'Space Grotesk' }}>
+            {trimmed}
+          </h3>
+        </div>
+      );
+    }
+    // Subsection headers (starts with capital letter and ends with colon)
+    else if (trimmed.match(/^[A-Z][^:]+:$/)) {
+      formatted.push(
+        <div key={idx} className="mt-4 mb-2">
+          <h4 className="text-base font-semibold text-gray-800">{trimmed}</h4>
+        </div>
+      );
+    }
+    // List items
+    else if (trimmed.startsWith('- ')) {
+      formatted.push(
+        <div key={idx} className="ml-4 mb-1 flex items-start gap-2">
+          <span className="text-blue-600 font-bold mt-1">•</span>
+          <span className="text-sm text-gray-700 flex-1">{trimmed.substring(2)}</span>
+        </div>
+      );
+    }
+    // Framework with percentage
+    else if (trimmed.match(/.*:\s*\d+%/)) {
+      const [framework, percentage] = trimmed.split(':');
+      formatted.push(
+        <div key={idx} className="my-2 p-3 bg-blue-50 rounded-lg flex justify-between items-center">
+          <span className="font-semibold text-gray-800">{framework.trim()}</span>
+          <span className="text-2xl font-bold text-blue-600" style={{ fontFamily: 'Space Grotesk' }}>
+            {percentage.trim()}
+          </span>
+        </div>
+      );
+    }
+    // Regular text
+    else if (trimmed.length > 0) {
+      formatted.push(
+        <p key={idx} className="text-sm text-gray-700 leading-relaxed mb-2">
+          {trimmed}
+        </p>
+      );
+    }
+    // Empty line
+    else {
+      formatted.push(<div key={idx} className="h-2" />);
+    }
+  });
+  
+  return <div className="space-y-1">{formatted}</div>;
+};
+
 export default function ChatInterface() {
   const navigate = useNavigate();
   const [sessionId, setSessionId] = useState(null);
