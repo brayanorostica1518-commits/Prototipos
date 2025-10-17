@@ -194,41 +194,47 @@ export default function Dashboard() {
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Bar Chart */}
-          <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg" data-testid="bar-chart">
-            <h3 className="text-xl font-semibold mb-4 text-gray-900" style={{ fontFamily: 'Space Grotesk' }}>
-              Comparativa de Cumplimiento
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={barChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis dataKey="framework" stroke="#6b7280" />
-                <YAxis stroke="#6b7280" domain={[0, 100]} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                />
-                <Legend />
-                <Bar dataKey="cumplimiento" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
+        {barChartData && barChartData.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Bar Chart */}
+            <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg" data-testid="bar-chart">
+              <h3 className="text-xl font-semibold mb-4 text-gray-900" style={{ fontFamily: 'Space Grotesk' }}>
+                Comparativa de Cumplimiento
+              </h3>
+              <div style={{ width: '100%', height: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={barChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis dataKey="framework" stroke="#6b7280" />
+                    <YAxis stroke="#6b7280" domain={[0, 100]} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                    />
+                    <Legend />
+                    <Bar dataKey="cumplimiento" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
 
-          {/* Radar Chart */}
-          <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg" data-testid="radar-chart">
-            <h3 className="text-xl font-semibold mb-4 text-gray-900" style={{ fontFamily: 'Space Grotesk' }}>
-              Análisis Multidimensional
-            </h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <RadarChart data={radarChartData}>
-                <PolarGrid stroke="#e5e7eb" />
-                <PolarAngleAxis dataKey="subject" stroke="#6b7280" />
-                <PolarRadiusAxis angle={90} domain={[0, 100]} stroke="#6b7280" />
-                <Radar name="Cumplimiento" dataKey="A" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </Card>
-        </div>
+            {/* Radar Chart */}
+            <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg" data-testid="radar-chart">
+              <h3 className="text-xl font-semibold mb-4 text-gray-900" style={{ fontFamily: 'Space Grotesk' }}>
+                Análisis Multidimensional
+              </h3>
+              <div style={{ width: '100%', height: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={radarChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <PolarGrid stroke="#e5e7eb" />
+                    <PolarAngleAxis dataKey="subject" stroke="#6b7280" />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} stroke="#6b7280" />
+                    <Radar name="Cumplimiento" dataKey="A" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* Gaps Table */}
         {analysisData.gaps && analysisData.gaps.length > 0 && (
