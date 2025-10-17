@@ -32,6 +32,9 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [analysisData, setAnalysisData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const barChartRef = useRef(null);
+  const radarChartRef = useRef(null);
 
   useEffect(() => {
     fetchAnalysis();
@@ -49,62 +52,258 @@ export default function Dashboard() {
     }
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     if (!analysisData) return;
 
-    const doc = new jsPDF();
-    
-    // Title
-    doc.setFontSize(20);
-    doc.text("Reporte de Assessment", 20, 20);
-    
-    // Date
-    doc.setFontSize(10);
-    doc.text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, 20, 30);
-    
-    // Compliance Scores Table
-    doc.setFontSize(14);
-    doc.text("Niveles de Cumplimiento", 20, 45);
-    
-    const complianceData = Object.entries(analysisData.compliance_scores || {}).map(([framework, score]) => [
-      framework,
-      `${score}%`
-    ]);
-    
-    autoTable(doc, {
-      startY: 50,
-      head: [['Marco Normativo', 'Cumplimiento']],
-      body: complianceData,
-    });
-    
-    // Gaps Table
-    let finalY = doc.lastAutoTable.finalY + 10;
-    doc.text("Gaps Identificados", 20, finalY);
-    
-    const gapsData = (analysisData.gaps || []).map(gap => [
-      gap.framework,
-      gap.description,
-      gap.severity
-    ]);
-    
-    autoTable(doc, {
-      startY: finalY + 5,
-      head: [['Framework', 'Descripción', 'Severidad']],
-      body: gapsData,
-      styles: { fontSize: 9 }
-    });
-    
-    // Analysis Text
-    finalY = doc.lastAutoTable.finalY + 10;
-    doc.setFontSize(14);
-    doc.text("Análisis Detallado", 20, finalY);
-    
-    doc.setFontSize(10);
-    const splitText = doc.splitTextToSize(analysisData.analysis || '', 170);
-    doc.text(splitText, 20, finalY + 7);
-    
-    doc.save(`assessment-report-${sessionId}.pdf`);
-    toast.success("Reporte exportado exitosamente");
+    setExporting(true);
+    toast.info("Generando reporte completo...");
+
+    try {
+      const doc = new jsPDF();
+      let yPos = 20;
+
+      // ===== PORTADA =====
+      doc.setFillColor(59, 130, 246); // Blue
+      doc.rect(0, 0, 210, 60, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(28);
+      doc.text("REPORTE DE ASSESSMENT", 105, 30, { align: 'center' });
+      
+      doc.setFontSize(14);
+      doc.text("Análisis de Cumplimiento Normativo", 105, 42, { align: 'center' });
+      
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(12);
+      yPos = 75;
+      doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      })}`, 20, yPos);
+      
+      yPos += 10;
+      doc.text(`ID de sesión: ${sessionId.substring(0, 8)}...`, 20, yPos);
+      
+      // Frameworks evaluados
+      yPos += 15;
+      doc.setFontSize(14);
+      doc.setTextColor(59, 130, 246);
+      doc.text("Marcos Normativos Evaluados:", 20, yPos);
+      
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      yPos += 8;
+      (analysisData.frameworks || []).forEach((fw) => {
+        doc.text(`• ${fw}`, 25, yPos);
+        yPos += 6;
+      });
+
+      // ===== PÁGINA 2: RESUMEN EJECUTIVO =====
+      doc.addPage();
+      yPos = 20;
+      
+      doc.setFillColor(59, 130, 246);
+      doc.rect(0, 0, 210, 15, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.text("RESUMEN EJECUTIVO", 105, 10, { align: 'center' });
+      
+      doc.setTextColor(0, 0, 0);
+      yPos = 30;
+      
+      // Extract executive summary from analysis
+      const analysisText = analysisData.analysis || '';
+      const summaryMatch = analysisText.match(/1\. RESUMEN EJECUTIVO([\s\S]*?)(?=2\.|$)/i);
+      const summaryText = summaryMatch ? summaryMatch[1].trim() : analysisText.substring(0, 500);
+      
+      doc.setFontSize(11);
+      const splitSummary = doc.splitTextToSize(summaryText, 170);
+      doc.text(splitSummary, 20, yPos);
+      
+      yPos += (splitSummary.length * 5) + 15;
+
+      // Tabla de cumplimiento resumida
+      if (yPos > 250) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      const complianceData = Object.entries(analysisData.compliance_scores || {}).map(([framework, score]) => {
+        let status = "Crítico";
+        let color = [220, 38, 38];
+        if (score >= 80) {
+          status = "Excelente";
+          color = [34, 197, 94];
+        } else if (score >= 60) {
+          status = "Aceptable";
+          color = [234, 179, 8];
+        } else if (score >= 40) {
+          status = "Bajo";
+          color = [249, 115, 22];
+        }
+        
+        return [framework, `${score}%`, { content: status, styles: { textColor: color, fontStyle: 'bold' } }];
+      });
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Marco Normativo', 'Cumplimiento', 'Estado']],
+        body: complianceData,
+        headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255] },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        margin: { left: 20, right: 20 }
+      });
+
+      // ===== PÁGINA 3: GRÁFICAS =====
+      doc.addPage();
+      
+      doc.setFillColor(59, 130, 246);
+      doc.rect(0, 0, 210, 15, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.text("ANÁLISIS VISUAL", 105, 10, { align: 'center' });
+      
+      yPos = 25;
+
+      // Capturar gráficas como imágenes
+      if (barChartRef.current) {
+        try {
+          const barCanvas = await html2canvas(barChartRef.current, { scale: 2 });
+          const barImgData = barCanvas.toDataURL('image/png');
+          doc.addImage(barImgData, 'PNG', 15, yPos, 180, 80);
+          yPos += 90;
+        } catch (e) {
+          console.error("Error capturing bar chart:", e);
+        }
+      }
+
+      if (radarChartRef.current) {
+        try {
+          const radarCanvas = await html2canvas(radarChartRef.current, { scale: 2 });
+          const radarImgData = radarCanvas.toDataURL('image/png');
+          doc.addImage(radarImgData, 'PNG', 15, yPos, 180, 80);
+        } catch (e) {
+          console.error("Error capturing radar chart:", e);
+        }
+      }
+
+      // ===== PÁGINA 4: GAPS IDENTIFICADOS =====
+      if (analysisData.gaps && analysisData.gaps.length > 0) {
+        doc.addPage();
+        
+        doc.setFillColor(59, 130, 246);
+        doc.rect(0, 0, 210, 15, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(18);
+        doc.text("GAPS IDENTIFICADOS", 105, 10, { align: 'center' });
+        
+        const gapsData = analysisData.gaps.map(gap => {
+          const severityText = gap.severity === "high" ? "Alta" : gap.severity === "medium" ? "Media" : "Baja";
+          const severityColor = gap.severity === "high" ? [220, 38, 38] : gap.severity === "medium" ? [234, 179, 8] : [34, 197, 94];
+          
+          return [
+            gap.framework,
+            { content: gap.description, styles: { cellWidth: 90 } },
+            { content: severityText, styles: { textColor: severityColor, fontStyle: 'bold', halign: 'center' } }
+          ];
+        });
+        
+        autoTable(doc, {
+          startY: 25,
+          head: [['Framework', 'Descripción del Gap', 'Severidad']],
+          body: gapsData,
+          headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255] },
+          alternateRowStyles: { fillColor: [248, 250, 252] },
+          margin: { left: 15, right: 15 },
+          styles: { fontSize: 9, cellPadding: 5 }
+        });
+      }
+
+      // ===== PÁGINAS SIGUIENTES: ANÁLISIS DETALLADO =====
+      doc.addPage();
+      
+      doc.setFillColor(59, 130, 246);
+      doc.rect(0, 0, 210, 15, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.text("ANÁLISIS DETALLADO", 105, 10, { align: 'center' });
+      
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(10);
+      yPos = 25;
+      
+      // Split analysis into sections
+      const sections = analysisText.split(/(?=\d+\.\s+[A-ZÁÉÍÓÚÑ])/);
+      
+      sections.forEach((section, idx) => {
+        if (!section.trim()) return;
+        
+        const lines = section.split('\n');
+        
+        lines.forEach((line) => {
+          if (!line.trim()) {
+            yPos += 3;
+            return;
+          }
+          
+          // Check if we need a new page
+          if (yPos > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          // Section headers
+          if (line.match(/^\d+\.\s+[A-ZÁÉÍÓÚÑ]/)) {
+            doc.setFontSize(13);
+            doc.setTextColor(59, 130, 246);
+            doc.text(line.trim(), 20, yPos);
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(10);
+            yPos += 8;
+          }
+          // Subsection headers
+          else if (line.trim().match(/^[A-Z][^:]+:$/)) {
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text(line.trim(), 20, yPos);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(10);
+            yPos += 6;
+          }
+          // List items
+          else if (line.trim().startsWith('-')) {
+            const splitLine = doc.splitTextToSize(line.trim(), 165);
+            doc.text(splitLine, 25, yPos);
+            yPos += splitLine.length * 5;
+          }
+          // Regular text
+          else {
+            const splitLine = doc.splitTextToSize(line.trim(), 170);
+            doc.text(splitLine, 20, yPos);
+            yPos += splitLine.length * 5;
+          }
+        });
+      });
+
+      // ===== ÚLTIMA PÁGINA: PIE DE PÁGINA =====
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text(`Página ${i} de ${pageCount}`, 105, 290, { align: 'center' });
+        doc.text('Assessment AI - Reporte Confidencial', 20, 290);
+      }
+
+      doc.save(`Reporte-Assessment-${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success("Reporte completo generado exitosamente");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Error al generar el reporte");
+    } finally {
+      setExporting(false);
+    }
   };
 
   if (loading) {
