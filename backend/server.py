@@ -380,7 +380,6 @@ def extract_compliance_scores(ai_response: str, frameworks: List[str]) -> dict:
     """Extract compliance scores from AI response with better pattern matching"""
     scores = {}
     
-    import re
     for framework in frameworks:
         # Try multiple patterns to find the score
         patterns = [
