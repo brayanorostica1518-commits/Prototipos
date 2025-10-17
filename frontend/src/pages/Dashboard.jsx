@@ -401,7 +401,7 @@ export default function Dashboard() {
               <h3 className="text-xl font-semibold mb-4 text-gray-900" style={{ fontFamily: 'Space Grotesk' }}>
                 Comparativa de Cumplimiento
               </h3>
-              <div style={{ width: '100%', height: 300 }}>
+              <div ref={barChartRef} style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={barChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -422,7 +422,7 @@ export default function Dashboard() {
               <h3 className="text-xl font-semibold mb-4 text-gray-900" style={{ fontFamily: 'Space Grotesk' }}>
                 Análisis Multidimensional
               </h3>
-              <div style={{ width: '100%', height: 300 }}>
+              <div ref={radarChartRef} style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart data={radarChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                     <PolarGrid stroke="#e5e7eb" />
