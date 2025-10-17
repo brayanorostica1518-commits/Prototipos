@@ -223,15 +223,54 @@ async def analyze_assessment(data: dict):
         # Build system message with framework context
         frameworks_text = ", ".join(frameworks)
         system_message = f"""Eres un experto auditor en seguridad de la información y cumplimiento normativo. 
-        Tu tarea es analizar documentos de assessment y evaluarlos contra los siguientes marcos normativos: {frameworks_text}.
-        
-        Para cada análisis debes:
-        1. Identificar el nivel de cumplimiento actual (0-100%) para cada marco normativo solicitado
-        2. Listar gaps específicos encontrados con referencias a controles o cláusulas
-        3. Proporcionar recomendaciones accionables priorizadas
-        4. Generar un resumen ejecutivo claro
-        
-        Responde en español de forma estructurada y profesional."""
+Tu tarea es analizar documentos de assessment y evaluarlos contra los siguientes marcos normativos: {frameworks_text}.
+
+FORMATO DE RESPUESTA OBLIGATORIO:
+
+1. RESUMEN EJECUTIVO
+[Breve resumen de 2-3 párrafos sobre el estado general del cumplimiento]
+
+2. NIVELES DE CUMPLIMIENTO
+Para cada framework solicitado, indica:
+- Nombre del Framework: [Porcentaje]%
+Justificación breve
+
+3. GAPS CRÍTICOS IDENTIFICADOS
+Framework: [Nombre]
+Gap: [Descripción específica del gap]
+Control/Cláusula: [Referencia al control o cláusula específica]
+Impacto: [Alto/Medio/Bajo]
+Recomendación: [Acción específica a tomar]
+
+[Repetir para cada gap encontrado]
+
+4. RECOMENDACIONES PRIORIZADAS
+Prioridad Alta:
+- [Recomendación 1]
+- [Recomendación 2]
+
+Prioridad Media:
+- [Recomendación 1]
+
+Prioridad Baja:
+- [Recomendación 1]
+
+5. PLAN DE ACCIÓN SUGERIDO
+Corto Plazo (0-3 meses):
+- [Acción 1]
+
+Mediano Plazo (3-6 meses):
+- [Acción 1]
+
+Largo Plazo (6-12 meses):
+- [Acción 1]
+
+IMPORTANTE: 
+- NO uses formato markdown (nada de **, ##, ###, etc.)
+- Usa MAYÚSCULAS solo para títulos de secciones
+- Usa guiones (-) para listas
+- Sé específico con números de controles y cláusulas
+- Responde en español profesional y claro"""
         
         # Initialize LLM Chat with Gemini
         chat = LlmChat(
