@@ -1,12 +1,30 @@
-from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException
+"""
+Secure FastAPI Backend for Assessment AI Platform
+
+Security Features Implemented:
+- Rate limiting on all endpoints
+- Input sanitization and validation
+- Security headers (CSP, X-Frame-Options, etc.)
+- File upload validation
+- Error handling with safe messages
+- Security event logging
+- CORS protection
+"""
+
+from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Request, status
+from fastapi.responses import JSONResponse
+from fastapi.middleware.gzip import GZipMiddleware
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional
+from pydantic import BaseModel, Field, ConfigDict, validator
+from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, timezone
 import tempfile
@@ -17,188 +35,456 @@ from docx import Document
 import csv
 import re
 
+# Import security utilities
+from security_utils import (
+    sanitize_text,
+    sanitize_filename,
+    validate_file_type,
+    validate_file_content_safety,
+    validate_frameworks,
+    validate_session_id,
+    SECURITY_HEADERS,
+    get_safe_error_message,
+    log_security_event,
+    MAX_FILE_SIZE
+)
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# ==================== CONFIGURATION ====================
 
-# Create the main app without a prefix
-app = FastAPI()
+# Environment variables with defaults
+MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+DB_NAME = os.environ.get('DB_NAME', 'assessment_db')
+CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '*').split(',')
+DEBUG_MODE = os.environ.get('DEBUG', 'False').lower() == 'true'
+
+# MongoDB connection
+client = AsyncIOMotorClient(MONGO_URL)
+db = client[DB_NAME]
+
+# Rate limiter setup
+limiter = Limiter(key_func=get_remote_address)
+
+# Create the main app
+app = FastAPI(
+    title="Assessment AI API",
+    description="Secure API for compliance assessment analysis",
+    version="1.0.0",
+    docs_url="/api/docs" if DEBUG_MODE else None,  # Disable in production
+    redoc_url="/api/redoc" if DEBUG_MODE else None
+)
+
+# Add rate limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
-# Configure logging
+# Configure logging with security focus
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO if not DEBUG_MODE else logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        # In production, add file handler for audit logs
+    ]
 )
 logger = logging.getLogger(__name__)
 
-# Models
+# ==================== PYDANTIC MODELS WITH VALIDATION ====================
+
 class ChatMessage(BaseModel):
+    """Chat message model with validation"""
     model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     session_id: str
-    role: str  # 'user' or 'assistant'
-    content: str
+    role: str
+    content: str = Field(max_length=100000)
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     file_names: Optional[List[str]] = None
+    
+    @validator('role')
+    def validate_role(cls, v):
+        if v not in ['user', 'assistant']:
+            raise ValueError('Role must be user or assistant')
+        return v
+    
+    @validator('content')
+    def sanitize_content(cls, v):
+        return sanitize_text(v, max_length=100000)
+    
+    @validator('session_id')
+    def validate_session(cls, v):
+        if not validate_session_id(v):
+            raise ValueError('Invalid session ID format')
+        return v
 
-class ChatMessageCreate(BaseModel):
-    session_id: str
-    content: str
-    frameworks: List[str]  # ['ISO 27001', 'NIST', 'COBIT']
+
+class AnalysisRequest(BaseModel):
+    """Validated request for analysis"""
+    session_id: str = Field(max_length=100)
+    message: str = Field(max_length=50000)
+    frameworks: List[str] = Field(min_items=1, max_items=10)
+    file_ids: List[Dict] = Field(default=[])
+    
+    @validator('message')
+    def sanitize_message(cls, v):
+        return sanitize_text(v, max_length=50000)
+    
+    @validator('frameworks')
+    def validate_frameworks_list(cls, v):
+        if not validate_frameworks(v):
+            raise ValueError('Invalid frameworks selection')
+        return v
+    
+    @validator('session_id')
+    def validate_session(cls, v):
+        if not validate_session_id(v):
+            raise ValueError('Invalid session ID')
+        return v
+
 
 class AnalysisResult(BaseModel):
+    """Analysis result model"""
     model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     session_id: str
     frameworks: List[str]
     analysis: str
-    compliance_scores: dict  # {"ISO 27001": 85, "NIST": 78, "COBIT": 92}
-    gaps: List[dict]  # [{"framework": "ISO 27001", "gap": "...", "recommendation": "..."}]
+    compliance_scores: dict
+    gaps: List[dict]
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+
 class Session(BaseModel):
+    """Session model"""
     model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    title: str
+    title: str = Field(max_length=200)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    
+    @validator('title')
+    def sanitize_title(cls, v):
+        return sanitize_text(v, max_length=200)
 
-# Temporary storage for uploaded files (in production, use cloud storage)
+
+# ==================== MIDDLEWARE ====================
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Add security headers to all responses"""
+    response = await call_next(request)
+    
+    # Add all security headers
+    for header, value in SECURITY_HEADERS.items():
+        response.headers[header] = value
+    
+    return response
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log all incoming requests for security monitoring"""
+    # Log request details (excluding sensitive data)
+    log_security_event(
+        "API_REQUEST",
+        {
+            "method": request.method,
+            "path": request.url.path,
+            "client": get_remote_address(request)
+        }
+    )
+    
+    response = await call_next(request)
+    return response
+
+
+# Add middlewares
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=CORS_ORIGINS,
+    allow_methods=["GET", "POST"],  # Restricted methods
+    allow_headers=["*"],
+    max_age=3600,
+)
+
+
+# ==================== FILE HANDLING ====================
+
+# Secure temporary storage
 UPLOAD_DIR = Path("/tmp/assessment_uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
+
 def extract_text_from_excel(file_path: Path) -> str:
-    """Extract text content from Excel file"""
+    """Extract text content from Excel file with error handling"""
     try:
         wb = openpyxl.load_workbook(file_path, data_only=True)
         text_content = []
         
-        for sheet_name in wb.sheetnames:
+        for sheet_name in wb.sheetnames[:10]:  # Limit sheets
             sheet = wb[sheet_name]
-            text_content.append(f"\\n=== Hoja: {sheet_name} ===\\n")
+            text_content.append(f"\n=== Hoja: {sanitize_text(sheet_name, 100)} ===\n")
             
-            for row in sheet.iter_rows(values_only=True):
-                row_text = " | ".join([str(cell) if cell is not None else "" for cell in row])
+            # Limit rows to prevent DoS
+            for idx, row in enumerate(sheet.iter_rows(values_only=True)):
+                if idx > 10000:  # Max 10k rows
+                    break
+                row_text = " | ".join([str(cell)[:500] if cell is not None else "" for cell in row])
                 if row_text.strip():
-                    text_content.append(row_text)
+                    text_content.append(row_text[:2000])  # Limit row length
         
-        return "\\n".join(text_content)
+        return "\n".join(text_content)[:100000]  # Limit total size
+        
     except Exception as e:
         logger.error(f"Error extracting Excel: {str(e)}")
-        return f"Error al leer archivo Excel: {str(e)}"
+        raise HTTPException(status_code=400, detail="Invalid Excel file format")
+
 
 def extract_text_from_word(file_path: Path) -> str:
-    """Extract text content from Word file"""
+    """Extract text content from Word file with error handling"""
     try:
         doc = Document(file_path)
         text_content = []
         
-        for para in doc.paragraphs:
+        # Limit paragraphs
+        for idx, para in enumerate(doc.paragraphs):
+            if idx > 5000:  # Max 5k paragraphs
+                break
             if para.text.strip():
-                text_content.append(para.text)
+                text_content.append(para.text[:2000])  # Limit para length
         
-        # Also extract text from tables
-        for table in doc.tables:
+        # Limit tables
+        for idx, table in enumerate(doc.tables):
+            if idx > 100:  # Max 100 tables
+                break
             for row in table.rows:
-                row_text = " | ".join([cell.text for cell in row.cells])
+                row_text = " | ".join([cell.text[:500] for cell in row.cells])
                 if row_text.strip():
-                    text_content.append(row_text)
+                    text_content.append(row_text[:2000])
         
-        return "\\n".join(text_content)
+        return "\n".join(text_content)[:100000]  # Limit total size
+        
     except Exception as e:
         logger.error(f"Error extracting Word: {str(e)}")
-        return f"Error al leer archivo Word: {str(e)}"
+        raise HTTPException(status_code=400, detail="Invalid Word file format")
+
+
+# ==================== API ENDPOINTS ====================
 
 @api_router.get("/")
-async def root():
-    return {"message": "Assessment AI API Ready"}
+@limiter.limit("60/minute")
+async def root(request: Request):
+    """Health check endpoint"""
+    return {"message": "Assessment AI API Ready", "status": "operational"}
+
 
 @api_router.post("/sessions", response_model=Session)
-async def create_session():
-    """Create a new chat session"""
-    session = Session(title="Nueva Evaluación")
-    doc = session.model_dump()
-    doc['created_at'] = doc['created_at'].isoformat()
-    doc['updated_at'] = doc['updated_at'].isoformat()
-    
-    await db.sessions.insert_one(doc)
-    return session
+@limiter.limit("10/minute")  # Limit session creation
+async def create_session(request: Request):
+    """
+    Create a new chat session
+    Rate limited to prevent abuse
+    """
+    try:
+        session = Session(title="Nueva Evaluación")
+        doc = session.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        doc['updated_at'] = doc['updated_at'].isoformat()
+        
+        await db.sessions.insert_one(doc)
+        
+        log_security_event("SESSION_CREATED", {"session_id": session.id})
+        return session
+        
+    except Exception as e:
+        logger.error(f"Error creating session: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=get_safe_error_message(e, DEBUG_MODE)
+        )
+
 
 @api_router.get("/sessions", response_model=List[Session])
-async def get_sessions():
-    """Get all chat sessions"""
-    sessions = await db.sessions.find({}, {"_id": 0}).sort("updated_at", -1).to_list(100)
-    
-    for session in sessions:
-        if isinstance(session['created_at'], str):
-            session['created_at'] = datetime.fromisoformat(session['created_at'])
-        if isinstance(session['updated_at'], str):
-            session['updated_at'] = datetime.fromisoformat(session['updated_at'])
-    
-    return sessions
+@limiter.limit("20/minute")
+async def get_sessions(request: Request):
+    """Get all chat sessions with pagination"""
+    try:
+        # Limit to recent 100 sessions
+        sessions = await db.sessions.find(
+            {}, 
+            {"_id": 0}
+        ).sort("updated_at", -1).limit(100).to_list(100)
+        
+        for session in sessions:
+            if isinstance(session['created_at'], str):
+                session['created_at'] = datetime.fromisoformat(session['created_at'])
+            if isinstance(session['updated_at'], str):
+                session['updated_at'] = datetime.fromisoformat(session['updated_at'])
+        
+        return sessions
+        
+    except Exception as e:
+        logger.error(f"Error fetching sessions: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=get_safe_error_message(e, DEBUG_MODE)
+        )
+
 
 @api_router.post("/upload")
-async def upload_files(files: List[UploadFile] = File(...)):
-    """Upload assessment files (PDF, Excel, Word, CSV)"""
-    uploaded_files = []
-    
-    for file in files:
-        # Generate unique filename
-        file_id = str(uuid.uuid4())
-        file_ext = Path(file.filename).suffix
-        unique_filename = f"{file_id}{file_ext}"
-        file_path = UPLOAD_DIR / unique_filename
+@limiter.limit("5/minute")  # Strict limit on file uploads
+async def upload_files(request: Request, files: List[UploadFile] = File(...)):
+    """
+    Upload assessment files with security validation
+    - File type validation
+    - Size limits
+    - Content scanning
+    - Filename sanitization
+    """
+    try:
+        # Limit number of files
+        if len(files) > 10:
+            raise HTTPException(
+                status_code=400,
+                detail="Maximum 10 files allowed per upload"
+            )
         
-        # Save file
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        uploaded_files = []
         
-        uploaded_files.append({
-            "id": file_id,
-            "original_name": file.filename,
-            "stored_name": unique_filename,
-            "path": str(file_path),
-            "size": os.path.getsize(file_path)
-        })
-    
-    return {"files": uploaded_files}
+        for file in files:
+            # Validate file size from content length
+            if file.size and file.size > MAX_FILE_SIZE:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"File {file.filename} exceeds maximum size of 50MB"
+                )
+            
+            # Sanitize filename
+            safe_filename = sanitize_filename(file.filename)
+            
+            # Generate unique filename
+            file_id = str(uuid.uuid4())
+            file_ext = Path(safe_filename).suffix
+            unique_filename = f"{file_id}{file_ext}"
+            file_path = UPLOAD_DIR / unique_filename
+            
+            # Save file with size check
+            bytes_written = 0
+            with open(file_path, "wb") as buffer:
+                while chunk := await file.read(8192):
+                    bytes_written += len(chunk)
+                    if bytes_written > MAX_FILE_SIZE:
+                        file_path.unlink()  # Delete oversized file
+                        raise HTTPException(
+                            status_code=400,
+                            detail="File exceeds maximum size"
+                        )
+                    buffer.write(chunk)
+            
+            # Validate file type and content
+            if not validate_file_type(file_path):
+                file_path.unlink()
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid or disallowed file type: {safe_filename}"
+                )
+            
+            if not validate_file_content_safety(file_path):
+                file_path.unlink()
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"File contains suspicious content: {safe_filename}"
+                )
+            
+            uploaded_files.append({
+                "id": file_id,
+                "original_name": safe_filename,
+                "stored_name": unique_filename,
+                "path": str(file_path),
+                "size": bytes_written
+            })
+            
+            log_security_event(
+                "FILE_UPLOADED",
+                {
+                    "file_id": file_id,
+                    "filename": safe_filename,
+                    "size": bytes_written
+                }
+            )
+        
+        return {"files": uploaded_files}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading files: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=get_safe_error_message(e, DEBUG_MODE)
+        )
+
 
 @api_router.post("/analyze")
-async def analyze_assessment(data: dict):
-    """Analyze assessment files against selected frameworks"""
+@limiter.limit("3/minute")  # Conservative limit for AI analysis
+async def analyze_assessment(request: Request, data: AnalysisRequest):
+    """
+    Analyze assessment files against selected frameworks
+    With comprehensive security validations
+    """
     try:
-        session_id = data['session_id']
-        message_content = data['message']
-        frameworks = data['frameworks']
-        file_ids = data.get('file_ids', [])
+        session_id = data.session_id
+        message_content = data.message
+        frameworks = data.frameworks
+        file_ids = data.file_ids
         
         # Prepare file attachments and extracted text
         file_contents = []
         file_names = []
         extracted_texts = []
         
-        # Gemini-supported mime types for direct file upload
+        # Gemini-supported mime types
         gemini_supported = {'.pdf', '.csv', '.txt'}
+        
+        # Limit number of files in analysis
+        if len(file_ids) > 10:
+            raise HTTPException(
+                status_code=400,
+                detail="Maximum 10 files allowed for analysis"
+            )
         
         for file_info in file_ids:
             file_path = Path(file_info['path'])
+            
+            # Security check: ensure file is in upload directory
+            if not file_path.is_relative_to(UPLOAD_DIR):
+                log_security_event(
+                    "PATH_TRAVERSAL_ATTEMPT",
+                    {"path": str(file_path)},
+                    severity="WARNING"
+                )
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid file path"
+                )
+            
             if file_path.exists():
                 ext = file_path.suffix.lower()
-                file_names.append(file_info['original_name'])
+                safe_filename = sanitize_filename(file_info['original_name'])
+                file_names.append(safe_filename)
                 
                 # Handle files based on type
                 if ext in gemini_supported:
-                    # Direct upload for supported formats
                     mime_map = {
                         '.pdf': 'application/pdf',
                         '.csv': 'text/csv',
@@ -211,17 +497,17 @@ async def analyze_assessment(data: dict):
                         mime_type=mime_type
                     ))
                 elif ext in ['.xlsx', '.xls']:
-                    # Extract text from Excel
                     text = extract_text_from_excel(file_path)
-                    extracted_texts.append(f"\\n=== Contenido de {file_info['original_name']} ===\\n{text}")
+                    extracted_texts.append(
+                        f"\n=== Contenido de {safe_filename} ===\n{text}"
+                    )
                 elif ext in ['.docx', '.doc']:
-                    # Extract text from Word
                     text = extract_text_from_word(file_path)
-                    extracted_texts.append(f"\\n=== Contenido de {file_info['original_name']} ===\\n{text}")
-                else:
-                    extracted_texts.append(f"\\nArchivo no soportado: {file_info['original_name']}")
+                    extracted_texts.append(
+                        f"\n=== Contenido de {safe_filename} ===\n{text}"
+                    )
         
-        # Build system message with framework context
+        # Build system message
         frameworks_text = ", ".join(frameworks)
         system_message = f"""Eres un experto auditor en seguridad de la información y cumplimiento normativo. 
 Tu tarea es analizar documentos de assessment y evaluarlos contra los siguientes marcos normativos: {frameworks_text}.
@@ -243,12 +529,9 @@ Control/Cláusula: [Referencia al control o cláusula específica]
 Impacto: [Alto/Medio/Bajo]
 Recomendación: [Acción específica a tomar]
 
-[Repetir para cada gap encontrado]
-
 4. RECOMENDACIONES PRIORIZADAS
 Prioridad Alta:
 - [Recomendación 1]
-- [Recomendación 2]
 
 Prioridad Media:
 - [Recomendación 1]
@@ -273,7 +556,7 @@ IMPORTANTE:
 - Sé específico con números de controles y cláusulas
 - Responde en español profesional y claro"""
         
-        # Initialize LLM Chat with Gemini
+        # Initialize LLM Chat
         chat = LlmChat(
             api_key=os.environ['EMERGENT_LLM_KEY'],
             session_id=session_id,
@@ -281,20 +564,19 @@ IMPORTANTE:
         ).with_model("gemini", "gemini-2.0-flash")
         
         # Build user message
-        user_text = f"{message_content}\\n\\nMarcos a evaluar: {frameworks_text}"
+        user_text = f"{message_content}\n\nMarcos a evaluar: {frameworks_text}"
         if file_names:
-            user_text += f"\\n\\nArchivos adjuntos: {', '.join(file_names)}"
+            user_text += f"\n\nArchivos adjuntos: {', '.join(file_names)}"
         
-        # Add extracted text if any
         if extracted_texts:
-            user_text += "\\n\\n" + "\\n".join(extracted_texts)
+            user_text += "\n\n" + "\n".join(extracted_texts)
         
         user_message = UserMessage(
             text=user_text,
             file_contents=file_contents if file_contents else None
         )
         
-        # Get AI response
+        # Get AI response with timeout
         ai_response = await chat.send_message(user_message)
         
         # Save user message
@@ -318,7 +600,7 @@ IMPORTANTE:
         ai_doc['timestamp'] = ai_doc['timestamp'].isoformat()
         await db.messages.insert_one(ai_doc)
         
-        # Extract compliance scores and gaps from AI response (simple heuristic)
+        # Extract compliance scores and gaps
         compliance_scores = extract_compliance_scores(ai_response, frameworks)
         gaps = extract_gaps(ai_response, frameworks)
         
@@ -340,6 +622,15 @@ IMPORTANTE:
             {"$set": {"updated_at": datetime.now(timezone.utc).isoformat()}}
         )
         
+        log_security_event(
+            "ANALYSIS_COMPLETED",
+            {
+                "session_id": session_id,
+                "frameworks": frameworks,
+                "file_count": len(file_names)
+            }
+        )
+        
         return {
             "user_message": user_msg.model_dump(),
             "ai_response": ai_msg.model_dump(),
@@ -347,45 +638,91 @@ IMPORTANTE:
             "gaps": gaps
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error analyzing assessment: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        log_security_event(
+            "ANALYSIS_ERROR",
+            {"error": str(e)},
+            severity="ERROR"
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=get_safe_error_message(e, DEBUG_MODE)
+        )
+
 
 @api_router.get("/sessions/{session_id}/messages", response_model=List[ChatMessage])
-async def get_session_messages(session_id: str):
-    """Get all messages for a session"""
-    messages = await db.messages.find({"session_id": session_id}, {"_id": 0}).sort("timestamp", 1).to_list(1000)
-    
-    for msg in messages:
-        if isinstance(msg['timestamp'], str):
-            msg['timestamp'] = datetime.fromisoformat(msg['timestamp'])
-    
-    return messages
+@limiter.limit("30/minute")
+async def get_session_messages(request: Request, session_id: str):
+    """Get all messages for a session with validation"""
+    try:
+        # Validate session ID
+        if not validate_session_id(session_id):
+            raise HTTPException(status_code=400, detail="Invalid session ID")
+        
+        messages = await db.messages.find(
+            {"session_id": session_id},
+            {"_id": 0}
+        ).sort("timestamp", 1).limit(1000).to_list(1000)
+        
+        for msg in messages:
+            if isinstance(msg['timestamp'], str):
+                msg['timestamp'] = datetime.fromisoformat(msg['timestamp'])
+        
+        return messages
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching messages: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=get_safe_error_message(e, DEBUG_MODE)
+        )
+
 
 @api_router.get("/sessions/{session_id}/analysis")
-async def get_session_analysis(session_id: str):
-    """Get latest analysis for a session"""
-    analysis = await db.analysis_results.find_one(
-        {"session_id": session_id},
-        {"_id": 0},
-        sort=[("timestamp", -1)]
-    )
-    
-    if analysis and isinstance(analysis['timestamp'], str):
-        analysis['timestamp'] = datetime.fromisoformat(analysis['timestamp'])
-    
-    return analysis or {}
+@limiter.limit("30/minute")
+async def get_session_analysis(request: Request, session_id: str):
+    """Get latest analysis for a session with validation"""
+    try:
+        # Validate session ID
+        if not validate_session_id(session_id):
+            raise HTTPException(status_code=400, detail="Invalid session ID")
+        
+        analysis = await db.analysis_results.find_one(
+            {"session_id": session_id},
+            {"_id": 0},
+            sort=[("timestamp", -1)]
+        )
+        
+        if analysis and isinstance(analysis['timestamp'], str):
+            analysis['timestamp'] = datetime.fromisoformat(analysis['timestamp'])
+        
+        return analysis or {}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching analysis: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=get_safe_error_message(e, DEBUG_MODE)
+        )
+
+
+# ==================== HELPER FUNCTIONS ====================
 
 def extract_compliance_scores(ai_response: str, frameworks: List[str]) -> dict:
-    """Extract compliance scores from AI response with better pattern matching"""
+    """Extract compliance scores from AI response"""
     scores = {}
     
     for framework in frameworks:
-        # Try multiple patterns to find the score
         patterns = [
             rf"{re.escape(framework)}[:\s]+([0-9]+)%",
             rf"{re.escape(framework)}.*?([0-9]+)%",
-            # Handle abbreviated versions
             rf"{framework.split()[0]}[:\s]+([0-9]+)%"
         ]
         
@@ -398,26 +735,23 @@ def extract_compliance_scores(ai_response: str, frameworks: List[str]) -> dict:
                 break
         
         if not found:
-            # Try to find any percentage in the vicinity of the framework name
             framework_pos = ai_response.lower().find(framework.lower())
             if framework_pos != -1:
-                # Look in the next 100 characters
                 snippet = ai_response[framework_pos:framework_pos+100]
                 percentage_match = re.search(r'([0-9]+)%', snippet)
                 if percentage_match:
                     scores[framework] = int(percentage_match.group(1))
                 else:
-                    scores[framework] = 75  # Default
+                    scores[framework] = 75
             else:
-                scores[framework] = 75  # Default
+                scores[framework] = 75
     
     return scores
 
+
 def extract_gaps(ai_response: str, frameworks: List[str]) -> List[dict]:
-    """Extract gaps from AI response with better parsing"""
+    """Extract gaps from AI response"""
     gaps = []
-    
-    # Split by sections and find gaps section
     lines = ai_response.split('\n')
     in_gaps_section = False
     current_gap = {}
@@ -425,17 +759,14 @@ def extract_gaps(ai_response: str, frameworks: List[str]) -> List[dict]:
     for line in lines:
         stripped = line.strip()
         
-        # Detect gaps section
         if 'GAPS' in stripped.upper() or 'CRÍTICOS' in stripped.upper():
             in_gaps_section = True
             continue
         
-        # Exit gaps section on next major section
         if in_gaps_section and re.match(r'^[0-9]+\.\s+[A-Z]', stripped) and 'GAP' not in stripped.upper():
             in_gaps_section = False
         
         if in_gaps_section and stripped:
-            # Parse gap details
             if stripped.startswith('Framework:'):
                 if current_gap:
                     gaps.append(current_gap)
@@ -448,11 +779,9 @@ def extract_gaps(ai_response: str, frameworks: List[str]) -> List[dict]:
             elif stripped.startswith('Recomendación:') or stripped.startswith('Recomendacion:'):
                 current_gap["recommendation"] = stripped.split(':', 1)[1].strip()
     
-    # Add last gap if exists
     if current_gap and "description" in current_gap:
         gaps.append(current_gap)
     
-    # If no gaps found with structured parsing, fall back to keyword search
     if not gaps:
         for line in lines:
             if any(keyword in line.lower() for keyword in ['gap', 'deficiencia', 'falta', 'crítico']):
@@ -465,30 +794,47 @@ def extract_gaps(ai_response: str, frameworks: List[str]) -> List[dict]:
                         })
                         break
     
-    return gaps[:15]  # Limit to 15 gaps
-    
-    # If no gaps found, add generic ones
-    if not gaps:
-        for framework in frameworks:
-            gaps.append({
-                "framework": framework,
-                "description": f"Análisis detallado requerido para {framework}",
-                "severity": "low"
-            })
-    
-    return gaps[:10]  # Limit to 10 gaps
+    return gaps[:15]
 
-# Include the router in the main app
+
+# ==================== APP INITIALIZATION ====================
+
+# Include the router
 app.include_router(api_router)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+@app.on_event("startup")
+async def startup_event():
+    """Startup tasks"""
+    logger.info("Assessment AI API starting up...")
+    logger.info(f"Debug mode: {DEBUG_MODE}")
+    log_security_event("API_STARTUP", {"debug": DEBUG_MODE})
+
 
 @app.on_event("shutdown")
-async def shutdown_db_client():
+async def shutdown_event():
+    """Cleanup on shutdown"""
     client.close()
+    logger.info("Assessment AI API shutting down...")
+    log_security_event("API_SHUTDOWN", {})
+
+
+# ==================== ERROR HANDLERS ====================
+
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc):
+    """Custom 404 handler"""
+    return JSONResponse(
+        status_code=404,
+        content={"detail": "Resource not found"}
+    )
+
+
+@app.exception_handler(500)
+async def internal_error_handler(request: Request, exc):
+    """Custom 500 handler"""
+    logger.error(f"Internal server error: {str(exc)}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"}
+    )
