@@ -4,7 +4,6 @@ Security utilities module for input validation, sanitization and security checks
 
 import re
 import bleach
-import magic
 from typing import Optional, List, Dict
 from pathlib import Path
 import logging
