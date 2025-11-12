@@ -926,7 +926,7 @@ async def export_to_word(request: Request, data: Dict):
         for framework, score in analysis.get('compliance_scores', {}).items():
             row_cells = table.add_row().cells
             row_cells[0].text = framework
-            row_cells[1].text = f\"{score}%\"
+            row_cells[1].text = f"{score}%"
         
         doc.add_paragraph()
         
