@@ -904,8 +904,8 @@ async def export_to_word(request: Request, data: Dict):
         subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
         
         # Date
-        doc.add_paragraph(f\"Fecha de generación: {datetime.now().strftime('%d de %B de %Y')}\")
-        doc.add_paragraph(f\"ID de sesión: {session_id[:8]}...\")
+        doc.add_paragraph(f"Fecha de generación: {datetime.now().strftime('%d de %B de %Y')}")
+        doc.add_paragraph(f"ID de sesión: {session_id[:8]}...")
         doc.add_paragraph()
         
         # Frameworks
