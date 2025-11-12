@@ -997,7 +997,7 @@ async def export_to_word(request: Request, data: Dict):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f\"Error exporting to Word: {str(e)}\")
+        logger.error(f"Error exporting to Word: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=get_safe_error_message(e, DEBUG_MODE)
