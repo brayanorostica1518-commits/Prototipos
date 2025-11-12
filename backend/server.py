@@ -12,7 +12,7 @@ Security Features Implemented:
 """
 
 from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Request, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -32,8 +32,11 @@ import shutil
 from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
 import openpyxl
 from docx import Document
+from docx.shared import Inches, Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 import csv
 import re
+import io
 
 # Import security utilities
 from security_utils import (
@@ -47,6 +50,16 @@ from security_utils import (
     get_safe_error_message,
     log_security_event,
     MAX_FILE_SIZE
+)
+
+# Import template system
+from prompt_templates import (
+    get_all_templates,
+    get_template_by_id,
+    fill_template,
+    get_categories,
+    TemplateCategory,
+    PromptTemplate
 )
 
 ROOT_DIR = Path(__file__).parent
