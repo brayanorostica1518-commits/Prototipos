@@ -987,11 +987,11 @@ async def export_to_word(request: Request, data: Dict):
         log_security_event("WORD_EXPORT", {"session_id": session_id})
         
         # Return as downloadable file
-        filename = f\"Reporte-Assessment-{datetime.now().strftime('%Y-%m-%d')}.docx\"
+        filename = f"Reporte-Assessment-{datetime.now().strftime('%Y-%m-%d')}.docx"
         return StreamingResponse(
             file_stream,
-            media_type=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document\",
-            headers={\"Content-Disposition\": f\"attachment; filename={filename}\"}
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
         
     except HTTPException:
