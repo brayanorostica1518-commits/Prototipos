@@ -726,6 +726,284 @@ async def get_session_analysis(request: Request, session_id: str):
         )
 
 
+# ==================== TEMPLATE ENDPOINTS ====================
+
+@api_router.get("/templates")
+@limiter.limit("20/minute")
+async def list_templates(request: Request, category: Optional[str] = None):
+    """
+    Get all available prompt templates
+    Optionally filter by category
+    """
+    try:
+        cat_filter = None
+        if category:
+            try:
+                cat_filter = TemplateCategory(category)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid category")
+        
+        templates = get_all_templates(cat_filter)
+        
+        # Convert to dict for JSON response
+        result = []
+        for t in templates:
+            result.append({
+                "id": t.id,
+                "name": t.name,
+                "category": t.category.value,
+                "description": t.description,
+                "frameworks": t.frameworks,
+                "icon": t.icon,
+                "variable_count": len(t.variables)
+            })
+        
+        log_security_event("TEMPLATES_LISTED", {"count": len(result), "category": category})
+        return {"templates": result}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error listing templates: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=get_safe_error_message(e, DEBUG_MODE)
+        )
+
+
+@api_router.get("/templates/categories")
+@limiter.limit("20/minute")
+async def list_categories(request: Request):
+    """Get all template categories"""
+    try:
+        categories = get_categories()
+        return {"categories": categories}
+    except Exception as e:
+        logger.error(f"Error fetching categories: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=get_safe_error_message(e, DEBUG_MODE)
+        )
+
+
+@api_router.get("/templates/{template_id}")
+@limiter.limit("20/minute")
+async def get_template_detail(request: Request, template_id: str):
+    """Get full template details including variables"""
+    try:
+        template = get_template_by_id(template_id)
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+        
+        log_security_event("TEMPLATE_ACCESSED", {"template_id": template_id})
+        return template.model_dump()
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching template: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=get_safe_error_message(e, DEBUG_MODE)
+        )
+
+
+@api_router.post("/templates/{template_id}/fill")
+@limiter.limit("10/minute")
+async def fill_template_endpoint(request: Request, template_id: str, variables: Dict[str, str]):
+    """
+    Fill template with user-provided variables
+    Returns the complete prompt ready to send to AI
+    """
+    try:
+        template = get_template_by_id(template_id)
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+        
+        # Validate that all required variables are provided
+        required_vars = [v.name for v in template.variables if v.required]
+        missing_vars = [v for v in required_vars if v not in variables or not variables[v].strip()]
+        
+        if missing_vars:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Missing required variables: {', '.join(missing_vars)}"
+            )
+        
+        # Sanitize all variable values
+        sanitized_vars = {
+            key: sanitize_text(value, max_length=10000)
+            for key, value in variables.items()
+        }
+        
+        # Fill template
+        filled_prompt = fill_template(template.template, sanitized_vars)
+        
+        log_security_event(
+            "TEMPLATE_FILLED",
+            {"template_id": template_id, "template_name": template.name}
+        )
+        
+        return {
+            "filled_prompt": filled_prompt,
+            "template_name": template.name,
+            "frameworks": template.frameworks,
+            "output_format": template.output_format
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error filling template: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=get_safe_error_message(e, DEBUG_MODE)
+        )
+
+
+@api_router.post("/export/word")
+@limiter.limit("5/minute")
+async def export_to_word(request: Request, data: Dict):
+    """
+    Export analysis to Microsoft Word document
+    Formatted with proper structure
+    """
+    try:
+        session_id = data.get('session_id')
+        if not session_id or not validate_session_id(session_id):
+            raise HTTPException(status_code=400, detail="Invalid session ID")
+        
+        # Get analysis data
+        analysis = await db.analysis_results.find_one(
+            {"session_id": session_id},
+            {"_id": 0},
+            sort=[("timestamp", -1)]
+        )
+        
+        if not analysis:
+            raise HTTPException(status_code=404, detail="No analysis found for this session")
+        
+        # Create Word document
+        doc = Document()
+        
+        # Set document margins
+        sections = doc.sections
+        for section in sections:
+            section.top_margin = Inches(1)
+            section.bottom_margin = Inches(1)
+            section.left_margin = Inches(1)
+            section.right_margin = Inches(1)
+        
+        # Title
+        title = doc.add_heading('Reporte de Assessment', 0)
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        # Subtitle
+        subtitle = doc.add_paragraph()
+        subtitle.add_run('Análisis de Cumplimiento Normativo').bold = True
+        subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        # Date
+        doc.add_paragraph(f\"Fecha de generación: {datetime.now().strftime('%d de %B de %Y')}\")
+        doc.add_paragraph(f\"ID de sesión: {session_id[:8]}...\")
+        doc.add_paragraph()
+        
+        # Frameworks
+        doc.add_heading('Marcos Normativos Evaluados', level=2)
+        for fw in analysis.get('frameworks', []):
+            doc.add_paragraph(fw, style='List Bullet')
+        
+        doc.add_page_break()
+        
+        # Compliance Scores
+        doc.add_heading('Niveles de Cumplimiento', level=2)
+        table = doc.add_table(rows=1, cols=2)
+        table.style = 'Light Grid Accent 1'
+        hdr_cells = table.rows[0].cells
+        hdr_cells[0].text = 'Marco Normativo'
+        hdr_cells[1].text = 'Cumplimiento'
+        
+        for framework, score in analysis.get('compliance_scores', {}).items():
+            row_cells = table.add_row().cells
+            row_cells[0].text = framework
+            row_cells[1].text = f\"{score}%\"
+        
+        doc.add_paragraph()
+        
+        # Gaps
+        if analysis.get('gaps'):
+            doc.add_heading('Gaps Identificados', level=2)
+            gaps_table = doc.add_table(rows=1, cols=3)
+            gaps_table.style = 'Light Grid Accent 1'
+            hdr_cells = gaps_table.rows[0].cells
+            hdr_cells[0].text = 'Framework'
+            hdr_cells[1].text = 'Descripción'
+            hdr_cells[2].text = 'Severidad'
+            
+            for gap in analysis.get('gaps', []):
+                row_cells = gaps_table.add_row().cells
+                row_cells[0].text = gap.get('framework', '')
+                row_cells[1].text = gap.get('description', '')[:200]  # Limit length
+                severity = gap.get('severity', 'medium')
+                row_cells[2].text = {'high': 'Alta', 'medium': 'Media', 'low': 'Baja'}.get(severity, 'Media')
+        
+        doc.add_page_break()
+        
+        # Detailed Analysis
+        doc.add_heading('Análisis Detallado', level=2)
+        analysis_text = analysis.get('analysis', '')
+        
+        # Parse analysis text into structured paragraphs
+        lines = analysis_text.split('\\n')
+        for line in lines:
+            stripped = line.strip()
+            if not stripped:
+                continue
+            
+            # Section headers (numbered or all caps)
+            if re.match(r'^[0-9]+\\.\\s+[A-ZÁÉÍÓÚÑ]', stripped) or re.match(r'^[A-ZÁÉÍÓÚÑ\\s]{10,}$', stripped):
+                doc.add_heading(stripped, level=3)
+            # Subsection headers
+            elif stripped.endswith(':') and len(stripped) < 100:
+                p = doc.add_paragraph()
+                p.add_run(stripped).bold = True
+            # List items
+            elif stripped.startswith('- '):
+                doc.add_paragraph(stripped[2:], style='List Bullet')
+            # Regular text
+            else:
+                doc.add_paragraph(stripped)
+        
+        # Footer
+        doc.add_paragraph()
+        footer = doc.add_paragraph('Assessment AI - Reporte Confidencial')
+        footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        # Save to bytes
+        file_stream = io.BytesIO()
+        doc.save(file_stream)
+        file_stream.seek(0)
+        
+        log_security_event("WORD_EXPORT", {"session_id": session_id})
+        
+        # Return as downloadable file
+        filename = f\"Reporte-Assessment-{datetime.now().strftime('%Y-%m-%d')}.docx\"
+        return StreamingResponse(
+            file_stream,
+            media_type=\"application/vnd.openxmlformats-officedocument.wordprocessingml.document\",
+            headers={\"Content-Disposition\": f\"attachment; filename={filename}\"}
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f\"Error exporting to Word: {str(e)}\")
+        raise HTTPException(
+            status_code=500,
+            detail=get_safe_error_message(e, DEBUG_MODE)
+        )
+
+
 # ==================== HELPER FUNCTIONS ====================
 
 def extract_compliance_scores(ai_response: str, frameworks: List[str]) -> dict:
