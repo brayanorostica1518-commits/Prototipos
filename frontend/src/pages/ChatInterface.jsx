@@ -239,7 +239,7 @@ export default function ChatInterface() {
 
   const handleViewDashboard = () => {
     if (sessionId) {
-      navigate(\`/dashboard/\${sessionId}\`);
+      navigate(`/dashboard/${sessionId}`);
     }
   };
 
