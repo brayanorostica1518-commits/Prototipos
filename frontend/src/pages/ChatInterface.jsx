@@ -370,7 +370,7 @@ export default function ChatInterface() {
                   <Upload className="w-5 h-5" />
                   ARCHIVOS
                 </h3>
-                <div {...getRootProps()} className={\`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all \${isDragActive ? "border-cyan-500 bg-cyan-500/10" : "border-cyan-500/30 hover:border-cyan-500/60 hover:bg-gray-800/30"}\`}>
+                <div {...getRootProps()} className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all ${isDragActive ? "border-cyan-500 bg-cyan-500/10" : "border-cyan-500/30 hover:border-cyan-500/60 hover:bg-gray-800/30"}`}>
                   <input {...getInputProps()} />
                   <Upload className="w-8 h-8 mx-auto mb-2 text-cyan-400" />
                   <p className="text-sm text-gray-400">{isDragActive ? "Suelta aquí" : "Arrastra o haz clic"}</p>
