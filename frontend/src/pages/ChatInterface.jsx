@@ -279,9 +279,9 @@ export default function ChatInterface() {
                   <button
                     key={session.id}
                     onClick={() => loadSession(session.id)}
-                    className={\`w-full text-left p-3 rounded-lg transition-all glass-card \${
+                    className={`w-full text-left p-3 rounded-lg transition-all glass-card ${
                       session.id === sessionId ? 'border-cyan-500 bg-cyan-500/10' : 'border-gray-700/50 hover:border-cyan-500/50'
-                    }\`}
+                    }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <MessageSquare className="w-4 h-4 text-cyan-400" />
