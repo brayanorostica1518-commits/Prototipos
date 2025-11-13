@@ -42,13 +42,42 @@ export default function Dashboard() {
 
   const fetchAnalysis = async () => {
     try {
-      const response = await axios.get(`${API}/sessions/${sessionId}/analysis`);
+      const response = await secureAxios.get(`/sessions/${sessionId}/analysis`);
       setAnalysisData(response.data);
     } catch (error) {
       console.error("Error fetching analysis:", error);
       toast.error("Error al cargar análisis");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const exportToWord = async () => {
+    if (!analysisData) return;
+    setExporting(true);
+    toast.info("Generando reporte Word...");
+
+    try {
+      const response = await secureAxios.post('/export/word', 
+        { session_id: sessionId },
+        { responseType: 'blob' }
+      );
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Reporte-Assessment-${new Date().toISOString().split('T')[0]}.docx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Reporte Word descargado exitosamente');
+    } catch (error) {
+      console.error('Error exporting Word:', error);
+      toast.error('Error al exportar a Word');
+    } finally {
+      setExporting(false);
     }
   };
 
