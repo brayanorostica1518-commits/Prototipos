@@ -439,17 +439,17 @@ export default function Dashboard() {
         {/* Compliance Scores */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           {Object.entries(analysisData.compliance_scores || {}).map(([framework, score]) => (
-            <Card key={framework} className="p-6 bg-white/80 backdrop-blur-sm shadow-lg animate-fade-in" data-testid={`compliance-card-${framework.toLowerCase().replace(/\s/g, '-')}`}>
-              <h3 className="text-lg font-semibold mb-2 text-gray-700">{framework}</h3>
+            <Card key={framework} className="p-6 glass-card border-cyan-500/30 shadow-lg animate-fade-in hover:border-cyan-500/60 transition-all" data-testid={`compliance-card-${framework.toLowerCase().replace(/\s/g, '-')}`}>
+              <h3 className="text-lg font-semibold mb-2 text-cyan-300">{framework}</h3>
               <div className="flex items-end gap-2">
-                <span className="text-5xl font-bold text-blue-600" style={{ fontFamily: 'Space Grotesk' }}>
+                <span className="text-5xl font-bold cyber-text-glow" style={{ fontFamily: 'Orbitron, monospace' }}>
                   {score}
                 </span>
                 <span className="text-2xl text-gray-500 mb-1">%</span>
               </div>
-              <div className="mt-3 w-full bg-gray-200 rounded-full h-2.5">
+              <div className="mt-3 w-full bg-gray-800/50 rounded-full h-2.5 border border-cyan-500/30">
                 <div
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 h-2.5 rounded-full transition-all duration-500"
+                  className="bg-gradient-to-r from-cyan-500 to-blue-600 h-2.5 rounded-full transition-all duration-500 shadow-lg shadow-cyan-500/50"
                   style={{ width: `${score}%` }}
                 ></div>
               </div>
