@@ -143,11 +143,11 @@ export default function ChatInterface() {
   const onDrop = async (acceptedFiles) => {
     for (const file of acceptedFiles) {
       if (!isValidFileType(file)) {
-        toast.error(\`Tipo de archivo no permitido: \${file.name}\`);
+        toast.error(`Tipo de archivo no permitido: ${file.name}`);
         return;
       }
       if (!isValidFileSize(file)) {
-        toast.error(\`Archivo muy grande: \${file.name}\`);
+        toast.error(`Archivo muy grande: ${file.name}`);
         return;
       }
     }
@@ -155,7 +155,7 @@ export default function ChatInterface() {
     try {
       const response = await uploadFiles(acceptedFiles);
       setUploadedFiles([...uploadedFiles, ...response.data.files]);
-      toast.success(\`\${acceptedFiles.length} archivo(s) subido(s)\`);
+      toast.success(`${acceptedFiles.length} archivo(s) subido(s)`);
     } catch (error) {
       console.error("Error uploading files:", error);
       toast.error("Error al subir archivos");
