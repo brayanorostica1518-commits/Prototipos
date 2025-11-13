@@ -132,7 +132,7 @@ export default function ChatInterface() {
   const loadSession = async (sid) => {
     try {
       setSessionId(sid);
-      const response = await secureAxios.get(\`/sessions/\${sid}/messages\`);
+      const response = await secureAxios.get(`/sessions/${sid}/messages`);
       setMessages(response.data);
     } catch (error) {
       console.error('Error loading session:', error);
