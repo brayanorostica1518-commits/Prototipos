@@ -373,42 +373,67 @@ export default function Dashboard() {
   }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-6">
+    <div className="min-h-screen cyber-grid bg-gradient-to-br from-gray-900 via-black to-gray-900 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6 animate-fade-in">
+        <div className="flex items-center justify-between mb-6 animate-fade-in glass-card p-4 rounded-xl border border-cyan-500/20">
           <div className="flex items-center gap-4">
             <Button
               onClick={() => navigate("/")}
               variant="outline"
-              className="shadow-sm"
+              className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500"
               data-testid="back-to-chat-btn"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver
             </Button>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900" style={{ fontFamily: 'Space Grotesk' }}>
-              Dashboard de Análisis
-            </h1>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg shadow-lg shadow-cyan-500/30">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-3xl md:text-4xl font-bold cyber-text-glow" style={{ fontFamily: 'Orbitron, monospace' }}>
+                DASHBOARD
+              </h1>
+            </div>
           </div>
-          <Button
-            onClick={exportToPDF}
-            disabled={exporting}
-            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md disabled:opacity-50"
-            data-testid="export-pdf-btn"
-          >
-            {exporting ? (
-              <>
-                <FileText className="w-4 h-4 mr-2 animate-pulse" />
-                Generando...
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4 mr-2" />
-                Descargar Reporte Completo
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={exportToWord}
+              disabled={exporting}
+              className="neon-button bg-gradient-to-r from-green-600 to-emerald-600"
+              data-testid="export-word-btn"
+            >
+              {exporting ? (
+                <>
+                  <FileText className="w-4 h-4 mr-2 animate-pulse" />
+                  Generando...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  Exportar Word
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={exportToPDF}
+              disabled={exporting}
+              className="neon-button"
+              data-testid="export-pdf-btn"
+            >
+              {exporting ? (
+                <>
+                  <FileText className="w-4 h-4 mr-2 animate-pulse" />
+                  Generando...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  Exportar PDF
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Compliance Scores */}
