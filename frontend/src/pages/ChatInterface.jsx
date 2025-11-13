@@ -410,12 +410,12 @@ export default function ChatInterface() {
                   </div>
                 ) : (
                   messages.map((msg, idx) => (
-                    <div key={idx} className={\`flex \${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in\`}>
-                      <div className={\`max-w-[80%] rounded-2xl p-4 shadow-lg \${
+                    <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}>
+                      <div className={`max-w-[80%] rounded-2xl p-4 shadow-lg ${
                         msg.role === "user"
                           ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white border border-cyan-500/50"
                           : "glass-card border-cyan-500/20"
-                      }\`}>
+                      }`}>
                         {msg.file_names && msg.file_names.length > 0 && (
                           <div className="mb-2 flex flex-wrap gap-1">
                             {msg.file_names.map((name, i) => (
