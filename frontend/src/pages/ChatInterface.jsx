@@ -247,9 +247,9 @@ export default function ChatInterface() {
     <div className="min-h-screen cyber-grid bg-gradient-to-br from-gray-900 via-black to-gray-900">
       <div className="flex h-screen">
         {/* Sidebar */}
-        <div className={\`\${
+        <div className={`${
           showSidebar ? 'w-80' : 'w-0'
-        } transition-all duration-300 glass-card border-r border-cyan-500/20 overflow-hidden flex flex-col\`}>
+        } transition-all duration-300 glass-card border-r border-cyan-500/20 overflow-hidden flex flex-col`}>
           {showSidebar && (
             <>
               <div className="p-4 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-600/10 to-blue-600/10">
