@@ -535,16 +535,38 @@ Para cada framework solicitado, indica:
 - Nombre del Framework: [Porcentaje]%
 Justificación breve
 
-3. GAPS CRÍTICOS IDENTIFICADOS
+3. MATRIZ DE CUMPLIMIENTO
+Genera una tabla con este formato exacto:
+
+TABLA DE CUMPLIMIENTO:
+| Framework | Cumplimiento | Estado | Prioridad |
+|-----------|--------------|--------|-----------|
+| [Nombre] | [X]% | [Crítico/Aceptable/Bueno/Excelente] | [Alta/Media/Baja] |
+
+4. GAPS CRÍTICOS IDENTIFICADOS
+Para cada gap, usa este formato:
+
+GAP ID: [Número]
 Framework: [Nombre]
 Gap: [Descripción específica del gap]
 Control/Cláusula: [Referencia al control o cláusula específica]
 Impacto: [Alto/Medio/Bajo]
 Recomendación: [Acción específica a tomar]
+Plazo sugerido: [Corto/Medio/Largo plazo]
 
-4. RECOMENDACIONES PRIORIZADAS
+5. TABLA DE GAPS PRIORIZADOS
+Genera una tabla con los gaps más críticos:
+
+TABLA DE GAPS:
+| ID | Framework | Gap | Severidad | Plazo |
+|----|-----------|-----|-----------|-------|
+| 1 | [Nombre] | [Gap breve] | [Alta/Media/Baja] | [X meses] |
+
+6. RECOMENDACIONES PRIORIZADAS
+
 Prioridad Alta:
 - [Recomendación 1]
+- [Recomendación 2]
 
 Prioridad Media:
 - [Recomendación 1]
@@ -552,9 +574,19 @@ Prioridad Media:
 Prioridad Baja:
 - [Recomendación 1]
 
-5. PLAN DE ACCIÓN SUGERIDO
+7. MATRIZ DE CONTROLES
+Genera una tabla de controles necesarios:
+
+TABLA DE CONTROLES:
+| Control | Framework | Implementado | Efectividad | Acción Requerida |
+|---------|-----------|--------------|-------------|------------------|
+| [Control] | [Framework] | [Sí/No/Parcial] | [Alta/Media/Baja/N/A] | [Acción] |
+
+8. PLAN DE ACCIÓN SUGERIDO
+
 Corto Plazo (0-3 meses):
 - [Acción 1]
+- [Acción 2]
 
 Mediano Plazo (3-6 meses):
 - [Acción 1]
@@ -562,11 +594,22 @@ Mediano Plazo (3-6 meses):
 Largo Plazo (6-12 meses):
 - [Acción 1]
 
+9. MÉTRICAS Y KPIS RECOMENDADOS
+Genera una tabla con métricas:
+
+TABLA DE MÉTRICAS:
+| Métrica | Valor Objetivo | Frecuencia de Medición | Responsable |
+|---------|----------------|------------------------|-------------|
+| [Métrica] | [Valor] | [Mensual/Trimestral] | [Rol] |
+
 IMPORTANTE: 
 - NO uses formato markdown (nada de **, ##, ###, etc.)
 - Usa MAYÚSCULAS solo para títulos de secciones
+- Las TABLAS deben usar el formato con | (pipes) para columnas
 - Usa guiones (-) para listas
 - Sé específico con números de controles y cláusulas
+- Incluye datos cuantitativos siempre que sea posible
+- Las tablas deben tener headers claros y datos alineados
 - Responde en español profesional y claro"""
         
         # Initialize LLM Chat
