@@ -9,7 +9,7 @@
 body {
   font-family: 'Inter', sans-serif;
   background: #000000;
-  color: #e5e7eb;
+  color: #f3f4f6;
   line-height: 1.6;
   overflow-x: hidden;
 }
@@ -17,6 +17,7 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Orbitron', 'Space Mono', monospace;
   font-weight: 700;
+  color: #e5e7eb;
 }
 
 .App {
