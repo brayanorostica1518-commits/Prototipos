@@ -548,41 +548,61 @@ export default function Dashboard() {
               </h3>
               <div ref={radarChartRef} style={{ width: '100%', height: 320 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={radarChartData} margin={{ top: 20, right: 40, left: 40, bottom: 20 }}>
+                  <RadarChart data={radarChartData} margin={{ top: 20, right: 50, left: 50, bottom: 20 }}>
+                    <defs>
+                      <linearGradient id="radarGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.8}/>
+                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                      </linearGradient>
+                    </defs>
                     <PolarGrid 
                       stroke="#374151" 
                       strokeDasharray="3 3"
+                      strokeWidth={1.5}
                     />
                     <PolarAngleAxis 
                       dataKey="subject" 
-                      tick={{ fill: '#d1d5db', fontSize: 11, fontWeight: 500 }}
+                      tick={{ fill: '#d1d5db', fontSize: 11, fontWeight: 600 }}
                     />
                     <PolarRadiusAxis 
                       angle={90} 
                       domain={[0, 100]} 
                       tick={{ fill: '#9ca3af', fontSize: 10 }}
                       tickCount={6}
+                      stroke="#4b5563"
                     />
                     <Radar 
                       name="Nivel de Cumplimiento" 
                       dataKey="cumplimiento" 
                       stroke="#06b6d4" 
-                      fill="#06b6d4" 
-                      fillOpacity={0.5}
-                      strokeWidth={2}
-                      dot={{ fill: '#06b6d4', r: 4 }}
+                      fill="url(#radarGradient)"
+                      fillOpacity={0.65}
+                      strokeWidth={3}
+                      dot={{ 
+                        fill: '#06b6d4', 
+                        stroke: '#fff',
+                        strokeWidth: 2,
+                        r: 5 
+                      }}
+                      activeDot={{ 
+                        fill: '#06b6d4', 
+                        stroke: '#fff',
+                        strokeWidth: 2,
+                        r: 7 
+                      }}
                     />
                     <Tooltip
                       contentStyle={{ 
                         backgroundColor: 'rgba(17, 24, 39, 0.95)', 
                         border: '1px solid #06b6d4', 
                         borderRadius: '8px',
-                        color: '#fff'
+                        color: '#fff',
+                        padding: '10px'
                       }}
-                      labelStyle={{ color: '#06b6d4', fontWeight: 'bold' }}
+                      labelStyle={{ color: '#06b6d4', fontWeight: 'bold', marginBottom: '5px' }}
                       itemStyle={{ color: '#d1d5db' }}
                       formatter={(value, name, props) => [
-                        `${value}%`,
+                        `${value}% de cumplimiento`,
                         props.payload.fullName || 'Cumplimiento'
                       ]}
                     />
