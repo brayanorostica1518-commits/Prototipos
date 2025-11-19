@@ -135,31 +135,41 @@ const renderTable = (rows, key) => {
       .filter(cell => cell.length > 0);
   };
   
-  const headers = parseRow(rows[0]);
-  const dataRows = rows.slice(1)
-    .filter(row => !row.includes('---') && !row.includes('==='))
-    .map(parseRow)
-    .filter(row => row.length > 0);
+  // Filter out separator rows first
+  const validRows = rows.filter(row => {
+    const trimmed = row.trim();
+    // Filter out rows that are only dashes, equals, or colons
+    return trimmed.length > 0 && 
+           !trimmed.match(/^\|[\s\-:=]+\|$/) &&
+           !trimmed.replace(/\|/g, '').match(/^[\s\-:=]+$/);
+  });
   
-  if (dataRows.length === 0) return null;
+  if (validRows.length < 2) return null;
+  
+  const headers = parseRow(validRows[0]);
+  const dataRows = validRows.slice(1)
+    .map(parseRow)
+    .filter(row => row.length > 0 && row.some(cell => cell.length > 0));
+  
+  if (dataRows.length === 0 || headers.length === 0) return null;
   
   return (
-    <div key={key} className="my-4 overflow-x-auto">
+    <div key={key} className="my-6 overflow-x-auto rounded-lg border border-cyan-500/30 shadow-lg shadow-cyan-500/20">
       <table className="w-full border-collapse">
         <thead>
-          <tr>
+          <tr className="bg-gradient-to-r from-cyan-900/50 to-blue-900/50">
             {headers.map((header, i) => (
-              <th key={i} className="bg-cyan-500/20 text-cyan-300 font-semibold px-4 py-3 text-left border-b-2 border-cyan-500/50 text-sm">
+              <th key={i} className="text-cyan-300 font-bold px-4 py-3 text-left border-b-2 border-cyan-500/50 text-sm uppercase tracking-wider" style={{ fontFamily: 'Orbitron, monospace' }}>
                 {header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody>
+        <tbody className="bg-gray-900/30">
           {dataRows.map((row, i) => (
-            <tr key={i} className="hover:bg-cyan-500/10 transition-colors border-b border-cyan-500/20">
+            <tr key={i} className="hover:bg-cyan-500/10 transition-all duration-200 border-b border-cyan-500/10">
               {row.map((cell, j) => (
-                <td key={j} className="px-4 py-3 text-gray-200 text-sm">
+                <td key={j} className="px-4 py-3 text-gray-200 text-sm leading-relaxed">
                   {cell}
                 </td>
               ))}
