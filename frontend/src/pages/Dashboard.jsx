@@ -533,17 +533,53 @@ export default function Dashboard() {
             </Card>
 
             {/* Radar Chart */}
-            <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg" data-testid="radar-chart">
-              <h3 className="text-xl font-semibold mb-4 text-gray-900" style={{ fontFamily: 'Space Grotesk' }}>
-                Análisis Multidimensional
+            <Card className="p-6 glass-card border-cyan-500/30 shadow-lg shadow-cyan-500/20" data-testid="radar-chart">
+              <h3 className="text-xl font-semibold mb-4 text-cyan-300" style={{ fontFamily: 'Orbitron, monospace' }}>
+                ANÁLISIS MULTIDIMENSIONAL
               </h3>
-              <div ref={radarChartRef} style={{ width: '100%', height: 300 }}>
+              <div ref={radarChartRef} style={{ width: '100%', height: 320 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart data={radarChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                    <PolarGrid stroke="#e5e7eb" />
-                    <PolarAngleAxis dataKey="subject" stroke="#6b7280" />
-                    <PolarRadiusAxis angle={90} domain={[0, 100]} stroke="#6b7280" />
-                    <Radar name="Cumplimiento" dataKey="A" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+                  <RadarChart data={radarChartData} margin={{ top: 20, right: 40, left: 40, bottom: 20 }}>
+                    <PolarGrid 
+                      stroke="#374151" 
+                      strokeDasharray="3 3"
+                    />
+                    <PolarAngleAxis 
+                      dataKey="subject" 
+                      tick={{ fill: '#d1d5db', fontSize: 11, fontWeight: 500 }}
+                    />
+                    <PolarRadiusAxis 
+                      angle={90} 
+                      domain={[0, 100]} 
+                      tick={{ fill: '#9ca3af', fontSize: 10 }}
+                      tickCount={6}
+                    />
+                    <Radar 
+                      name="Nivel de Cumplimiento" 
+                      dataKey="cumplimiento" 
+                      stroke="#06b6d4" 
+                      fill="#06b6d4" 
+                      fillOpacity={0.5}
+                      strokeWidth={2}
+                      dot={{ fill: '#06b6d4', r: 4 }}
+                    />
+                    <Tooltip
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(17, 24, 39, 0.95)', 
+                        border: '1px solid #06b6d4', 
+                        borderRadius: '8px',
+                        color: '#fff'
+                      }}
+                      labelStyle={{ color: '#06b6d4', fontWeight: 'bold' }}
+                      itemStyle={{ color: '#d1d5db' }}
+                      formatter={(value, name, props) => [
+                        `${value}%`,
+                        props.payload.fullName || 'Cumplimiento'
+                      ]}
+                    />
+                    <Legend 
+                      wrapperStyle={{ color: '#d1d5db', paddingTop: '10px' }}
+                    />
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
