@@ -476,21 +476,57 @@ export default function Dashboard() {
         {barChartData && barChartData.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Bar Chart */}
-            <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg" data-testid="bar-chart">
-              <h3 className="text-xl font-semibold mb-4 text-gray-900" style={{ fontFamily: 'Space Grotesk' }}>
-                Comparativa de Cumplimiento
+            <Card className="p-6 glass-card border-cyan-500/30 shadow-lg shadow-cyan-500/20" data-testid="bar-chart">
+              <h3 className="text-xl font-semibold mb-4 text-cyan-300" style={{ fontFamily: 'Orbitron, monospace' }}>
+                COMPARATIVA DE CUMPLIMIENTO
               </h3>
-              <div ref={barChartRef} style={{ width: '100%', height: 300 }}>
+              <div ref={barChartRef} style={{ width: '100%', height: 320 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={barChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="framework" stroke="#6b7280" />
-                    <YAxis stroke="#6b7280" domain={[0, 100]} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                  <BarChart data={barChartData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                    <XAxis 
+                      dataKey="framework" 
+                      stroke="#9ca3af" 
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      tick={{ fill: '#d1d5db', fontSize: 11 }}
                     />
-                    <Legend />
-                    <Bar dataKey="cumplimiento" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+                    <YAxis 
+                      stroke="#9ca3af" 
+                      domain={[0, 100]}
+                      tick={{ fill: '#d1d5db' }}
+                      label={{ value: 'Cumplimiento (%)', angle: -90, position: 'insideLeft', fill: '#9ca3af' }}
+                    />
+                    <Tooltip
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(17, 24, 39, 0.95)', 
+                        border: '1px solid #06b6d4', 
+                        borderRadius: '8px',
+                        color: '#fff'
+                      }}
+                      labelStyle={{ color: '#06b6d4', fontWeight: 'bold' }}
+                      itemStyle={{ color: '#d1d5db' }}
+                      formatter={(value, name, props) => [
+                        `${value}%`,
+                        props.payload.fullName || name
+                      ]}
+                    />
+                    <Legend 
+                      wrapperStyle={{ color: '#d1d5db' }}
+                      formatter={() => 'Nivel de Cumplimiento (%)'}
+                    />
+                    <Bar 
+                      dataKey="cumplimiento" 
+                      radius={[8, 8, 0, 0]}
+                      label={{ 
+                        position: 'top', 
+                        fill: '#06b6d4',
+                        fontSize: 12,
+                        fontWeight: 'bold',
+                        formatter: (value) => `${value}%`
+                      }}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
