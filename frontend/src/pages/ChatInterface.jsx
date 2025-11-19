@@ -411,15 +411,15 @@ export default function ChatInterface() {
                 ) : (
                   messages.map((msg, idx) => (
                     <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}>
-                      <div className={`max-w-[80%] rounded-2xl p-4 shadow-lg ${
+                      <div className={`max-w-[80%] rounded-2xl p-5 shadow-xl ${
                         msg.role === "user"
-                          ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white border border-cyan-500/50"
-                          : "glass-card border-cyan-500/20"
+                          ? "chat-bubble-user"
+                          : "chat-bubble-assistant"
                       }`}>
                         {msg.file_names && msg.file_names.length > 0 && (
-                          <div className="mb-2 flex flex-wrap gap-1">
+                          <div className="mb-3 flex flex-wrap gap-2">
                             {msg.file_names.map((name, i) => (
-                              <span key={i} className="text-xs bg-white/20 px-2 py-1 rounded-full border border-white/30">
+                              <span key={i} className="chat-file-attachment">
                                 📎 {name}
                               </span>
                             ))}
@@ -428,7 +428,7 @@ export default function ChatInterface() {
                         {msg.role === "assistant" ? (
                           <div className="formatted-response">{formatAIResponse(msg.content)}</div>
                         ) : (
-                          <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
+                          <p className="whitespace-pre-wrap text-base leading-relaxed font-medium">{msg.content}</p>
                         )}
                       </div>
                     </div>
