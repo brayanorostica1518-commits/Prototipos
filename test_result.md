@@ -116,6 +116,9 @@ backend:
       - working: true
         agent: "main"
         comment: "Endpoint /sessions/{session_id}/analysis retorna datos correctamente"
+      - working: true
+        agent: "testing"
+        comment: "TESTING COMPLETED - All critical backend endpoints verified: 1) GET /api/sessions ✅ returns session list, 2) POST /api/sessions ✅ creates new session with session_id, 3) GET /api/sessions/{session_id}/analysis ✅ returns compliance_scores dict (ISO 27001: 33%, NIST CSF: 50%), gaps array (2 gaps found), analysis string, and frameworks array - exact structure needed for Dashboard, 4) GET /api/templates ✅ returns 6 templates. All endpoints working correctly with proper data structures."
 
 frontend:
   - task: "Dashboard chart visualization improvements"
