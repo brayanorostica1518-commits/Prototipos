@@ -482,7 +482,15 @@ export default function Dashboard() {
               </h3>
               <div ref={barChartRef} style={{ width: '100%', height: 320 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={barChartData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
+                  <BarChart data={barChartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                    <defs>
+                      {COLORS.map((color, idx) => (
+                        <linearGradient key={`gradient-${idx}`} id={`colorGradient${idx}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={color} stopOpacity={0.9}/>
+                          <stop offset="100%" stopColor={color} stopOpacity={0.6}/>
+                        </linearGradient>
+                      ))}
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
                     <XAxis 
                       dataKey="framework" 
@@ -490,43 +498,48 @@ export default function Dashboard() {
                       angle={-45}
                       textAnchor="end"
                       height={80}
-                      tick={{ fill: '#d1d5db', fontSize: 11 }}
+                      tick={{ fill: '#d1d5db', fontSize: 11, fontWeight: 500 }}
                     />
                     <YAxis 
                       stroke="#9ca3af" 
                       domain={[0, 100]}
-                      tick={{ fill: '#d1d5db' }}
-                      label={{ value: 'Cumplimiento (%)', angle: -90, position: 'insideLeft', fill: '#9ca3af' }}
+                      tick={{ fill: '#d1d5db', fontSize: 11 }}
+                      label={{ value: 'Cumplimiento (%)', angle: -90, position: 'insideLeft', fill: '#9ca3af', fontSize: 12 }}
                     />
                     <Tooltip
                       contentStyle={{ 
                         backgroundColor: 'rgba(17, 24, 39, 0.95)', 
                         border: '1px solid #06b6d4', 
                         borderRadius: '8px',
-                        color: '#fff'
+                        color: '#fff',
+                        padding: '10px'
                       }}
-                      labelStyle={{ color: '#06b6d4', fontWeight: 'bold' }}
+                      labelStyle={{ color: '#06b6d4', fontWeight: 'bold', marginBottom: '5px' }}
                       itemStyle={{ color: '#d1d5db' }}
                       formatter={(value, name, props) => [
-                        `${value}%`,
+                        `${value}% de cumplimiento`,
                         props.payload.fullName || name
                       ]}
                     />
                     <Legend 
-                      wrapperStyle={{ color: '#d1d5db' }}
-                      formatter={() => 'Nivel de Cumplimiento (%)'}
+                      wrapperStyle={{ color: '#d1d5db', paddingTop: '10px' }}
+                      formatter={() => 'Nivel de Cumplimiento'}
                     />
                     <Bar 
-                      dataKey="cumplimiento" 
+                      dataKey="cumplimiento"
                       radius={[8, 8, 0, 0]}
                       label={{ 
                         position: 'top', 
                         fill: '#06b6d4',
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: 'bold',
                         formatter: (value) => `${value}%`
                       }}
-                    />
+                    >
+                      {barChartData.map((entry, index) => (
+                        <Bar key={`bar-${index}`} dataKey="cumplimiento" fill={`url(#colorGradient${index % COLORS.length})`} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
