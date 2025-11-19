@@ -535,11 +535,7 @@ export default function Dashboard() {
                         fontWeight: 'bold',
                         formatter: (value) => `${value}%`
                       }}
-                    >
-                      {barChartData.map((entry, index) => (
-                        <Bar key={`bar-${index}`} dataKey="cumplimiento" fill={`url(#colorGradient${index % COLORS.length})`} />
-                      ))}
-                    </Bar>
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
