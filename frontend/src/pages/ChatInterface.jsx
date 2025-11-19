@@ -34,53 +34,137 @@ const FRAMEWORKS = [
 const formatAIResponse = (text) => {
   const lines = text.split('\n');
   const formatted = [];
+  let inTable = false;
+  let tableRows = [];
   
   lines.forEach((line, idx) => {
     const trimmed = line.trim();
     
+    // Detect table rows
+    if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+      inTable = true;
+      tableRows.push(trimmed);
+      return;
+    } else if (inTable && tableRows.length > 0) {
+      // End of table, render it
+      formatted.push(renderTable(tableRows, idx));
+      inTable = false;
+      tableRows = [];
+    }
+    
+    // Section headers (ALL CAPS or numbered)
     if (trimmed.match(/^[0-9]+\\.\\s+[A-ZÁÉÍÓÚÑ\\s]+$/) || trimmed.match(/^[A-ZÁÉÍÓÚÑ\\s]{10,}$/)) {
       formatted.push(
-        <div key={idx} className="mt-6 mb-3 pb-2 border-b-2 border-cyan-500/30">
-          <h3 className="text-lg font-bold cyber-text-glow" style={{ fontFamily: 'Orbitron, monospace' }}>
+        <div key={idx} className="section-divider">
+          <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-400" style={{ fontFamily: 'Orbitron, monospace' }}>
             {trimmed}
           </h3>
         </div>
       );
-    } else if (trimmed.match(/^[A-Z][^:]+:$/)) {
+    } 
+    // Subsection headers
+    else if (trimmed.match(/^[A-Z][^:]+:$/)) {
       formatted.push(
         <div key={idx} className="mt-4 mb-2">
-          <h4 className="text-base font-semibold text-cyan-300">{trimmed}</h4>
+          <h4 className="text-lg font-semibold text-cyan-300">{trimmed}</h4>
         </div>
       );
-    } else if (trimmed.startsWith('- ')) {
+    } 
+    // List items
+    else if (trimmed.startsWith('- ')) {
       formatted.push(
-        <div key={idx} className="ml-4 mb-1 flex items-start gap-2">
-          <span className="text-cyan-400 font-bold mt-1">▸</span>
-          <span className="text-sm text-gray-400 flex-1">{trimmed.substring(2)}</span>
+        <div key={idx} className="ml-4 mb-2 flex items-start gap-3">
+          <span className="text-cyan-400 font-bold mt-1 text-lg">▸</span>
+          <span className="text-base text-gray-200 flex-1 leading-relaxed">{trimmed.substring(2)}</span>
         </div>
       );
-    } else if (trimmed.match(/.*:\\s*\\d+%/)) {
+    } 
+    // Framework with percentage
+    else if (trimmed.match(/.*:\\s*\\d+%/)) {
       const [framework, percentage] = trimmed.split(':');
       formatted.push(
-        <div key={idx} className="my-2 p-3 glass-card rounded-lg flex justify-between items-center">
-          <span className="font-semibold text-gray-300">{framework.trim()}</span>
-          <span className="text-2xl font-bold cyber-text" style={{ fontFamily: 'Orbitron, monospace' }}>
-            {percentage.trim()}
-          </span>
+        <div key={idx} className="my-3 p-4 glass-card rounded-lg flex justify-between items-center border-2 border-cyan-500/40">
+          <span className="font-semibold text-gray-100 text-base">{framework.trim()}</span>
+          <span className="percentage-display">{percentage.trim()}</span>
         </div>
       );
-    } else if (trimmed.length > 0) {
+    } 
+    // Gap ID or control reference
+    else if (trimmed.match(/^(GAP ID|Framework|Control|Gap|Impacto|Recomendación|Severidad|Plazo):/i)) {
+      const [label, ...valueParts] = trimmed.split(':');
+      const value = valueParts.join(':').trim();
       formatted.push(
-        <p key={idx} className="text-sm text-gray-400 leading-relaxed mb-2">
+        <div key={idx} className="mb-2 flex gap-2">
+          <span className="font-semibold text-cyan-400 min-w-[120px]">{label}:</span>
+          <span className="text-gray-200">{value}</span>
+        </div>
+      );
+    }
+    // Regular text
+    else if (trimmed.length > 0) {
+      formatted.push(
+        <p key={idx} className="text-base text-gray-200 leading-relaxed mb-3">
           {trimmed}
         </p>
       );
-    } else {
+    } 
+    // Empty line
+    else {
       formatted.push(<div key={idx} className="h-2" />);
     }
   });
   
+  // Render any remaining table
+  if (inTable && tableRows.length > 0) {
+    formatted.push(renderTable(tableRows, 'final'));
+  }
+  
   return <div className="space-y-1">{formatted}</div>;
+};
+
+const renderTable = (rows, key) => {
+  if (rows.length < 2) return null;
+  
+  const parseRow = (row) => {
+    return row.split('|')
+      .map(cell => cell.trim())
+      .filter(cell => cell.length > 0);
+  };
+  
+  const headers = parseRow(rows[0]);
+  const dataRows = rows.slice(1)
+    .filter(row => !row.includes('---') && !row.includes('==='))
+    .map(parseRow)
+    .filter(row => row.length > 0);
+  
+  if (dataRows.length === 0) return null;
+  
+  return (
+    <div key={key} className="my-4 overflow-x-auto">
+      <table className="w-full border-collapse">
+        <thead>
+          <tr>
+            {headers.map((header, i) => (
+              <th key={i} className="bg-cyan-500/20 text-cyan-300 font-semibold px-4 py-3 text-left border-b-2 border-cyan-500/50 text-sm">
+                {header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {dataRows.map((row, i) => (
+            <tr key={i} className="hover:bg-cyan-500/10 transition-colors border-b border-cyan-500/20">
+              {row.map((cell, j) => (
+                <td key={j} className="px-4 py-3 text-gray-200 text-sm">
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 };
 
 export default function ChatInterface() {
