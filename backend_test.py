@@ -237,6 +237,7 @@ def main():
         ("Health Check", tester.test_health_check),
         ("Create Session", tester.test_create_session),
         ("Get Sessions", tester.test_get_sessions),
+        ("Get Templates", tester.test_get_templates),
         ("File Upload", tester.test_file_upload),
         ("Analyze Assessment", tester.test_analyze_assessment),
         ("Get Session Messages", tester.test_get_session_messages),
