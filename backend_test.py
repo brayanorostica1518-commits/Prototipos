@@ -189,6 +189,40 @@ COBIT,APO01.01,Not Implemented,Governance framework missing"""
                 print(f"⚠️  Missing fields in analysis: {missing_fields}")
             else:
                 print("✅ All expected fields present in analysis data")
+                
+                # Verify compliance_scores structure
+                if 'compliance_scores' in response and isinstance(response['compliance_scores'], dict):
+                    print(f"   Compliance scores: {response['compliance_scores']}")
+                
+                # Verify gaps structure
+                if 'gaps' in response and isinstance(response['gaps'], list):
+                    print(f"   Found {len(response['gaps'])} gaps")
+        
+        return success
+
+    def test_get_templates(self):
+        """Test getting prompt templates"""
+        success, response = self.run_test(
+            "Get Templates",
+            "GET",
+            "templates",
+            200
+        )
+        
+        if success and response:
+            # Check if templates response has expected structure
+            if 'templates' in response and isinstance(response['templates'], list):
+                print(f"   Found {len(response['templates'])} templates")
+                if response['templates']:
+                    template = response['templates'][0]
+                    expected_fields = ['id', 'name', 'category', 'description', 'frameworks']
+                    missing_fields = [field for field in expected_fields if field not in template]
+                    if missing_fields:
+                        print(f"⚠️  Missing fields in template: {missing_fields}")
+                    else:
+                        print("✅ Template structure is correct")
+            else:
+                print("⚠️  Templates response missing 'templates' array")
         
         return success
 
