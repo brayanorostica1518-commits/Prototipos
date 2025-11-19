@@ -37,19 +37,25 @@ const formatAIResponse = (text) => {
   let inTable = false;
   let tableRows = [];
   
+  const finalizeTable = (idx) => {
+    if (tableRows.length > 0) {
+      formatted.push(renderTable(tableRows, idx));
+      tableRows = [];
+      inTable = false;
+    }
+  };
+  
   lines.forEach((line, idx) => {
     const trimmed = line.trim();
     
-    // Detect table rows
+    // Detect table rows (including separator rows)
     if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
       inTable = true;
       tableRows.push(trimmed);
       return;
-    } else if (inTable && tableRows.length > 0) {
-      // End of table, render it
-      formatted.push(renderTable(tableRows, idx));
-      inTable = false;
-      tableRows = [];
+    } else if (inTable) {
+      // End of table detected, render it before processing current line
+      finalizeTable(idx);
     }
     
     // Section headers (ALL CAPS or numbered)
@@ -114,10 +120,8 @@ const formatAIResponse = (text) => {
     }
   });
   
-  // Render any remaining table
-  if (inTable && tableRows.length > 0) {
-    formatted.push(renderTable(tableRows, 'final'));
-  }
+  // Render any remaining table at the end
+  finalizeTable('final');
   
   return <div className="space-y-1">{formatted}</div>;
 };
