@@ -131,7 +131,7 @@ COBIT,APO01.01,Not Implemented,Governance framework missing"""
         analysis_data = {
             "session_id": self.session_id,
             "message": "Por favor analiza este assessment de seguridad contra los marcos normativos seleccionados. Identifica gaps y proporciona recomendaciones.",
-            "frameworks": ["ISO 27001", "NIST"],
+            "frameworks": ["ISO 27001", "NIST CSF"],
             "file_ids": self.uploaded_files
         }
 
