@@ -360,15 +360,30 @@ export default function Dashboard() {
     );
   }
 
-  // Prepare chart data
-  const barChartData = Object.entries(analysisData.compliance_scores || {}).map(([framework, score]) => ({
-    framework,
-    cumplimiento: score
+  // Color palette for frameworks
+  const COLORS = [
+    '#06b6d4', // cyan
+    '#3b82f6', // blue
+    '#8b5cf6', // violet
+    '#ec4899', // pink
+    '#f59e0b', // amber
+    '#10b981', // emerald
+    '#ef4444', // red
+    '#6366f1', // indigo
+  ];
+
+  // Prepare chart data with colors
+  const barChartData = Object.entries(analysisData.compliance_scores || {}).map(([framework, score], index) => ({
+    framework: framework.length > 15 ? framework.substring(0, 15) + '...' : framework,
+    fullName: framework,
+    cumplimiento: score,
+    fill: COLORS[index % COLORS.length]
   }));
 
   const radarChartData = Object.entries(analysisData.compliance_scores || {}).map(([framework, score]) => ({
-    subject: framework,
-    A: score,
+    subject: framework.length > 12 ? framework.substring(0, 12) + '...' : framework,
+    fullName: framework,
+    cumplimiento: score,
     fullMark: 100
   }));
 
