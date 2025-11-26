@@ -551,14 +551,16 @@ TABLA DE CUMPLIMIENTO:
 | [Nombre] | [X]% | [Crítico/Aceptable/Bueno/Excelente] | [Alta/Media/Baja] |
 
 4. GAPS CRÍTICOS IDENTIFICADOS
-Para cada gap, usa este formato:
+Para cada gap, usa este formato (OBLIGATORIO referenciar controles específicos):
 
 GAP ID: [Número]
 Framework: [Nombre]
 Gap: [Descripción específica del gap]
-Control/Cláusula: [Referencia al control o cláusula específica]
+Control/Cláusula Afectada: [Referencia EXACTA al control específico, ej: A.8.5 Autenticación segura, o Cláusula 9.1 de ISO 9001]
+Descripción del Control: [Breve descripción del objetivo del control]
+Estado Actual: [Describe cómo está implementado actualmente vs. lo que requiere el control]
 Impacto: [Alto/Medio/Bajo]
-Recomendación: [Acción específica a tomar]
+Recomendación Específica: [Acción específica que se alinea con el objetivo del control]
 Plazo sugerido: [Corto/Medio/Largo plazo]
 
 5. TABLA DE GAPS PRIORIZADOS
