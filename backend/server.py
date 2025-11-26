@@ -62,6 +62,9 @@ from prompt_templates import (
     PromptTemplate
 )
 
+# Import ISO controls database
+from iso_controls import get_all_framework_controls_for_prompt
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
