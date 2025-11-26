@@ -572,16 +572,17 @@ TABLA DE GAPS:
 | 1 | [Nombre] | [Gap breve] | [Alta/Media/Baja] | [X meses] |
 
 6. RECOMENDACIONES PRIORIZADAS
+(Cada recomendación DEBE incluir la referencia al control específico)
 
 Prioridad Alta:
-- [Recomendación 1]
-- [Recomendación 2]
+- [Control X.X - Nombre del Control]: [Recomendación específica basada en el objetivo del control]
+- [Control Y.Y - Nombre del Control]: [Recomendación específica basada en el objetivo del control]
 
 Prioridad Media:
-- [Recomendación 1]
+- [Control Z.Z - Nombre del Control]: [Recomendación específica]
 
 Prioridad Baja:
-- [Recomendación 1]
+- [Control W.W - Nombre del Control]: [Recomendación específica]
 
 7. MATRIZ DE CONTROLES
 Genera una tabla de controles necesarios:
