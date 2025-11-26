@@ -523,10 +523,14 @@ async def analyze_assessment(request: Request, data: AnalysisRequest):
                         f"\n=== Contenido de {safe_filename} ===\n{text}"
                     )
         
-        # Build system message
+        # Build system message with framework-specific controls
         frameworks_text = ", ".join(frameworks)
+        controls_info = get_all_framework_controls_for_prompt(frameworks)
+        
         system_message = f"""Eres un experto auditor en seguridad de la información y cumplimiento normativo. 
 Tu tarea es analizar documentos de assessment y evaluarlos contra los siguientes marcos normativos: {frameworks_text}.
+
+{controls_info}
 
 FORMATO DE RESPUESTA OBLIGATORIO:
 
