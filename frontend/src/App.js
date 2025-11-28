@@ -41,6 +41,7 @@ function App() {
           <Routes>
             <Route path="/" element={<ChatInterface />} />
             <Route path="/dashboard/:sessionId" element={<Dashboard />} />
+            <Route path="/reports" element={<ReportGenerator />} />
             {/* 404 fallback */}
             <Route path="*" element={
               <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
