@@ -428,6 +428,10 @@ export default function ChatInterface() {
                   <FileCode className="w-4 h-4 mr-2" />
                   Plantillas
                 </Button>
+                <Button onClick={() => navigate('/reports')} className="neon-button bg-gradient-to-r from-green-600 to-emerald-600">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Informes
+                </Button>
                 {messages.length > 0 && (
                   <Button onClick={handleViewDashboard} className="neon-button">
                     <BarChart3 className="w-4 h-4 mr-2" />
