@@ -4,8 +4,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ChatInterface from "@/pages/ChatInterface";
 import Dashboard from "@/pages/Dashboard";
 import ReportGenerator from "@/pages/ReportGenerator";
+import Login from "@/pages/Login";
 import { Toaster } from "@/components/ui/sonner";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 /**
  * Main App Component with Security Features:
