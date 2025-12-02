@@ -16,8 +16,8 @@ const secureAxios = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  // Security: Prevent sending credentials if not needed
-  withCredentials: false,
+  // Include credentials (cookies) for authentication
+  withCredentials: true,
 });
 
 // Request interceptor for security checks
