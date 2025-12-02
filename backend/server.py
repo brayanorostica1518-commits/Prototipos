@@ -65,6 +65,9 @@ from prompt_templates import (
 # Import ISO controls database
 from iso_controls import get_all_framework_controls_for_prompt
 
+# Import authentication
+from auth import auth_router, get_current_user, User
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
