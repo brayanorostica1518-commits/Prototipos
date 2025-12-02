@@ -176,6 +176,7 @@ class AnalysisResult(BaseModel):
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     session_id: str
+    user_id: str  # Owner of the analysis
     frameworks: List[str]
     analysis: str
     compliance_scores: dict
