@@ -706,9 +706,10 @@ IMPORTANTE:
         compliance_scores = extract_compliance_scores(ai_response, frameworks)
         gaps = extract_gaps(ai_response, frameworks)
         
-        # Save analysis result
+        # Save analysis result with user_id
         analysis = AnalysisResult(
             session_id=session_id,
+            user_id=current_user.id,
             frameworks=frameworks,
             analysis=ai_response,
             compliance_scores=compliance_scores,
