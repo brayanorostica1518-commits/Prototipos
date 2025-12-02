@@ -800,15 +800,23 @@ async def get_session_messages(
 
 @api_router.get("/sessions/{session_id}/analysis")
 @limiter.limit("30/minute")
-async def get_session_analysis(request: Request, session_id: str):
-    """Get latest analysis for a session with validation"""
+async def get_session_analysis(
+    request: Request,
+    session_id: str,
+    current_user: User = Annotated[User, get_current_user]
+):
+    """Get latest analysis for a session with validation and user authorization"""
     try:
         # Validate session ID
         if not validate_session_id(session_id):
             raise HTTPException(status_code=400, detail="Invalid session ID")
         
+        # Find analysis for user's session only
         analysis = await db.analysis_results.find_one(
-            {"session_id": session_id},
+            {
+                "session_id": session_id,
+                "user_id": current_user.id
+            },
             {"_id": 0},
             sort=[("timestamp", -1)]
         )
