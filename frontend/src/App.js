@@ -39,26 +39,47 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <div className="App">
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<ChatInterface />} />
-            <Route path="/dashboard/:sessionId" element={<Dashboard />} />
-            <Route path="/reports" element={<ReportGenerator />} />
-            {/* 404 fallback */}
-            <Route path="*" element={
-              <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-                <div className="text-center">
-                  <h1 className="text-6xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Space Grotesk' }}>404</h1>
-                  <p className="text-xl text-gray-600 mb-8">Página no encontrada</p>
-                  <a href="/" className="text-blue-600 hover:underline">Volver al inicio</a>
-                </div>
-              </div>
-            } />
-          </Routes>
-        </BrowserRouter>
-        <Toaster position="top-right" />
-      </div>
+      <BrowserRouter>
+        <AuthProvider>
+          <div className="App">
+            <Routes>
+              {/* Public route */}
+              <Route path="/login" element={<Login />} />
+              
+              {/* Protected routes */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <ChatInterface />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard/:sessionId" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/reports" element={
+                <ProtectedRoute>
+                  <ReportGenerator />
+                </ProtectedRoute>
+              } />
+              
+              {/* 404 fallback */}
+              <Route path="*" element={
+                <ProtectedRoute>
+                  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+                    <div className="text-center">
+                      <h1 className="text-6xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Space Grotesk' }}>404</h1>
+                      <p className="text-xl text-gray-600 mb-8">Página no encontrada</p>
+                      <a href="/" className="text-blue-600 hover:underline">Volver al inicio</a>
+                    </div>
+                  </div>
+                </ProtectedRoute>
+              } />
+            </Routes>
+            <Toaster position="top-right" />
+          </div>
+        </AuthProvider>
+      </BrowserRouter>
     </ErrorBoundary>
   );
 }
