@@ -16,17 +16,15 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(true);
 
-  // Check if user is authenticated on mount
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  // Handle session_id from URL fragment (after Google OAuth redirect)
+  // Handle session_id from URL fragment FIRST (after Google OAuth redirect)
   useEffect(() => {
     const handleSessionId = async () => {
       const hash = window.location.hash;
       if (hash && hash.includes('session_id=')) {
+        console.log('Processing session_id from URL...');
         setLoading(true);
+        setChecking(false);
+        
         const sessionId = hash.split('session_id=')[1].split('&')[0];
         
         try {
@@ -45,9 +43,13 @@ export const AuthProvider = ({ children }) => {
           console.log('User authenticated successfully:', response.data.email);
         } catch (error) {
           console.error('Error processing session ID:', error);
+          setUser(null);
         } finally {
           setLoading(false);
         }
+      } else {
+        // No session_id in URL, check existing auth
+        checkAuth();
       }
     };
 
