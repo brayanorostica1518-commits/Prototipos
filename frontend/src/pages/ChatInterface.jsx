@@ -439,6 +439,7 @@ export default function ChatInterface() {
                     Dashboard
                   </Button>
                 )}
+                <UserMenu />
               </div>
             </div>
           </div>
