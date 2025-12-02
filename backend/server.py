@@ -314,20 +314,29 @@ async def root(request: Request):
 
 @api_router.post("/sessions", response_model=Session)
 @limiter.limit("10/minute")  # Limit session creation
-async def create_session(request: Request):
+async def create_session(
+    request: Request,
+    current_user: User = Annotated[User, get_current_user]
+):
     """
-    Create a new chat session
+    Create a new chat session for authenticated user
     Rate limited to prevent abuse
     """
     try:
-        session = Session(title="Nueva Evaluación")
+        session = Session(
+            title="Nueva Evaluación",
+            user_id=current_user.id
+        )
         doc = session.model_dump()
         doc['created_at'] = doc['created_at'].isoformat()
         doc['updated_at'] = doc['updated_at'].isoformat()
         
         await db.sessions.insert_one(doc)
         
-        log_security_event("SESSION_CREATED", {"session_id": session.id})
+        log_security_event("SESSION_CREATED", {
+            "session_id": session.id,
+            "user_id": current_user.id
+        })
         return session
         
     except Exception as e:
