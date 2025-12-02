@@ -474,16 +474,31 @@ async def upload_files(request: Request, files: List[UploadFile] = File(...)):
 
 @api_router.post("/analyze")
 @limiter.limit("3/minute")  # Conservative limit for AI analysis
-async def analyze_assessment(request: Request, data: AnalysisRequest):
+async def analyze_assessment(
+    request: Request,
+    data: AnalysisRequest,
+    current_user: User = Annotated[User, get_current_user]
+):
     """
     Analyze assessment files against selected frameworks
-    With comprehensive security validations
+    With comprehensive security validations and user authentication
     """
     try:
         session_id = data.session_id
         message_content = data.message
         frameworks = data.frameworks
         file_ids = data.file_ids
+        
+        # Verify session belongs to current user
+        session = await db.sessions.find_one({
+            "session_id": session_id,
+            "user_id": current_user.id
+        })
+        if not session:
+            raise HTTPException(
+                status_code=403,
+                detail="Session not found or access denied"
+            )
         
         # Prepare file attachments and extracted text
         file_contents = []
