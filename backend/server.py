@@ -758,12 +758,24 @@ IMPORTANTE:
 
 @api_router.get("/sessions/{session_id}/messages", response_model=List[ChatMessage])
 @limiter.limit("30/minute")
-async def get_session_messages(request: Request, session_id: str):
-    """Get all messages for a session with validation"""
+async def get_session_messages(
+    request: Request,
+    session_id: str,
+    current_user: User = Annotated[User, get_current_user]
+):
+    """Get all messages for a session with validation and user authorization"""
     try:
         # Validate session ID
         if not validate_session_id(session_id):
             raise HTTPException(status_code=400, detail="Invalid session ID")
+        
+        # Verify session belongs to user
+        session = await db.sessions.find_one({
+            "session_id": session_id,
+            "user_id": current_user.id
+        })
+        if not session:
+            raise HTTPException(status_code=403, detail="Session not found or access denied")
         
         messages = await db.messages.find(
             {"session_id": session_id},
