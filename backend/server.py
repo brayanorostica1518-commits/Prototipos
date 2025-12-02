@@ -102,6 +102,9 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Include auth router
+api_router.include_router(auth_router)
+
 # Configure logging with security focus
 logging.basicConfig(
     level=logging.INFO if not DEBUG_MODE else logging.DEBUG,
