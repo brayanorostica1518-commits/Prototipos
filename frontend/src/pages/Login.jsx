@@ -6,22 +6,24 @@ import { Card } from '@/components/ui/card';
 import { Shield, Lock, CheckCircle } from 'lucide-react';
 
 export default function Login() {
-  const { user, loading, checking, loginWithGoogle } = useAuth();
+  const { user, loading, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     // If user is already authenticated, redirect to main app
-    if (user && !loading && !checking) {
-      navigate('/');
+    if (user && !loading) {
+      console.log('User already authenticated, redirecting...');
+      navigate('/', { replace: true });
     }
-  }, [user, loading, checking, navigate]);
+  }, [user, loading, navigate]);
 
-  if (loading || checking) {
+  // Show loading only briefly
+  if (loading) {
     return (
       <div className="min-h-screen cyber-grid bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-400"></div>
-          <p className="text-cyan-400 mt-4 text-lg">Verificando autenticación...</p>
+          <p className="text-cyan-400 mt-4 text-lg">Procesando autenticación...</p>
         </div>
       </div>
     );
