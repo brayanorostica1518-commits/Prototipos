@@ -24,7 +24,7 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, validator
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Annotated
 import uuid
 from datetime import datetime, timezone
 import tempfile
