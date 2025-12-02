@@ -13,6 +13,7 @@ import { useDropzone } from "react-dropzone";
 import secureAxios, { uploadFiles } from "@/utils/api";
 import { isValidFileType, isValidFileSize } from "@/utils/security";
 import TemplateLibrary from "@/components/TemplateLibrary";
+import UserMenu from "@/components/UserMenu";
 
 const FRAMEWORKS = [
   { id: "ISO 27001", label: "ISO 27001 - Seguridad de la Información" },
