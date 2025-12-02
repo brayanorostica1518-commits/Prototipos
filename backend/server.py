@@ -316,7 +316,7 @@ async def root(request: Request):
 @limiter.limit("10/minute")  # Limit session creation
 async def create_session(
     request: Request,
-    current_user: User = Annotated[User, get_current_user]
+    current_user: User = Depends(get_current_user)
 ):
     """
     Create a new chat session for authenticated user
@@ -351,7 +351,7 @@ async def create_session(
 @limiter.limit("20/minute")
 async def get_sessions(
     request: Request,
-    current_user: User = Annotated[User, get_current_user]
+    current_user: User = Depends(get_current_user)
 ):
     """Get all chat sessions for authenticated user"""
     try:
@@ -477,7 +477,7 @@ async def upload_files(request: Request, files: List[UploadFile] = File(...)):
 async def analyze_assessment(
     request: Request,
     data: AnalysisRequest,
-    current_user: User = Annotated[User, get_current_user]
+    current_user: User = Depends(get_current_user)
 ):
     """
     Analyze assessment files against selected frameworks
@@ -761,7 +761,7 @@ IMPORTANTE:
 async def get_session_messages(
     request: Request,
     session_id: str,
-    current_user: User = Annotated[User, get_current_user]
+    current_user: User = Depends(get_current_user)
 ):
     """Get all messages for a session with validation and user authorization"""
     try:
@@ -803,7 +803,7 @@ async def get_session_messages(
 async def get_session_analysis(
     request: Request,
     session_id: str,
-    current_user: User = Annotated[User, get_current_user]
+    current_user: User = Depends(get_current_user)
 ):
     """Get latest analysis for a session with validation and user authorization"""
     try:
