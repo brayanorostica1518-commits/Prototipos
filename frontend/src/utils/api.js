@@ -58,6 +58,16 @@ secureAxios.interceptors.response.use(
       // Server responded with error status
       const status = error.response.status;
       
+      // Handle 401 Unauthorized - redirect to login
+      if (status === 401) {
+        console.warn('Unauthorized - redirecting to login');
+        // Only redirect if not already on login page
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+        return Promise.reject(error);
+      }
+      
       // Log security events
       if (status === 429) {
         console.warn('Rate limit exceeded on server');
@@ -71,7 +81,7 @@ secureAxios.interceptors.response.use(
       const safeMessage = getSafeErrorMessage(error);
       
       // Don't show toast for certain errors (let component handle them)
-      if (status !== 404) {
+      if (status !== 404 && status !== 401) {
         toast.error(safeMessage);
       }
     } else if (error.request) {
