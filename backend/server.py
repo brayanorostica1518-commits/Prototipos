@@ -349,12 +349,15 @@ async def create_session(
 
 @api_router.get("/sessions", response_model=List[Session])
 @limiter.limit("20/minute")
-async def get_sessions(request: Request):
-    """Get all chat sessions with pagination"""
+async def get_sessions(
+    request: Request,
+    current_user: User = Annotated[User, get_current_user]
+):
+    """Get all chat sessions for authenticated user"""
     try:
-        # Limit to recent 100 sessions
+        # Filter sessions by user_id
         sessions = await db.sessions.find(
-            {}, 
+            {"user_id": current_user.id}, 
             {"_id": 0}
         ).sort("updated_at", -1).limit(100).to_list(100)
         
@@ -364,6 +367,7 @@ async def get_sessions(request: Request):
             if isinstance(session['updated_at'], str):
                 session['updated_at'] = datetime.fromisoformat(session['updated_at'])
         
+        logger.info(f"Retrieved {len(sessions)} sessions for user {current_user.id}")
         return sessions
         
     except Exception as e:
