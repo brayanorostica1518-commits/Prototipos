@@ -1,23 +1,12 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect, useState } from 'react';
 
 export default function ProtectedRoute({ children }) {
-  const { user, loading, checking } = useAuth();
-  const [timeout, setTimeout] = useState(false);
+  const { user, checking } = useAuth();
+  const location = useLocation();
 
-  // Set a timeout to avoid infinite loading
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      console.log('Auth check timeout - redirecting to login');
-      setTimeout(true);
-    }, 5000); // 5 seconds timeout
-
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  // Show loading screen while checking authentication (max 5 seconds)
-  if ((loading || checking) && !timeout) {
+  // Only show loading briefly while checking
+  if (checking) {
     return (
       <div className="min-h-screen cyber-grid bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
         <div className="text-center">
@@ -28,12 +17,13 @@ export default function ProtectedRoute({ children }) {
     );
   }
 
-  // Redirect to login if not authenticated or timeout
-  if (!user || timeout) {
-    console.log('Redirecting to login - user:', !!user, 'timeout:', timeout);
-    return <Navigate to="/login" replace />;
+  // Redirect to login if not authenticated
+  if (!user) {
+    console.log('No user found, redirecting to login from:', location.pathname);
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   // Render protected content
+  console.log('User authenticated, rendering protected route');
   return children;
 }
