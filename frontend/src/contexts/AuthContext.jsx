@@ -37,14 +37,16 @@ export const AuthProvider = ({ children }) => {
           
           setUser(response.data);
           
-          // Clean URL fragment
-          window.history.replaceState(null, '', window.location.pathname + window.location.search);
-          
           console.log('User authenticated successfully:', response.data.email);
+          
+          // Clean URL fragment and navigate to home
+          window.history.replaceState(null, '', '/');
+          
+          // Force navigation to home
+          window.location.href = '/';
         } catch (error) {
           console.error('Error processing session ID:', error);
           setUser(null);
-        } finally {
           setLoading(false);
         }
       } else {
