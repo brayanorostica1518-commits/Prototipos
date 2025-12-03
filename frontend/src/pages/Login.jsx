@@ -14,17 +14,22 @@ export default function Login() {
     // Check if we have a session_id in URL (from Google OAuth callback)
     const hash = window.location.hash;
     if (hash && hash.includes('session_id=')) {
+      console.log('OAuth callback detected, showing processing screen...');
       setIsProcessing(true);
+      // Don't navigate yet, let AuthContext handle it
     }
   }, []);
 
   useEffect(() => {
     // If user is already authenticated, redirect to main app
-    if (user) {
+    // But only if we're not processing OAuth callback (to avoid double navigation)
+    if (user && !isProcessing) {
       console.log('User authenticated, redirecting to app...');
-      navigate('/', { replace: true });
+      setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 100); // Small delay to ensure state is updated
     }
-  }, [user, navigate]);
+  }, [user, navigate, isProcessing]);
 
   // Show loading only when processing OAuth callback
   if (isProcessing) {
