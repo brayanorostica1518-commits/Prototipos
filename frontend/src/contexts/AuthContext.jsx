@@ -21,36 +21,37 @@ export const AuthProvider = ({ children }) => {
     const handleSessionId = async () => {
       const hash = window.location.hash;
       if (hash && hash.includes('session_id=')) {
-        console.log('Processing session_id from URL...');
+        console.log('OAuth callback detected - processing session_id...');
         setLoading(true);
         setChecking(false);
         
         const sessionId = hash.split('session_id=')[1].split('&')[0];
         
         try {
-          // Call backend to process session_id
+          console.log('Calling /api/auth/session-data...');
           const response = await secureAxios.post('/auth/session-data', null, {
             headers: {
               'X-Session-ID': sessionId
             }
           });
           
+          console.log('Authentication successful:', response.data.email);
           setUser(response.data);
           
-          console.log('User authenticated successfully:', response.data.email);
-          
-          // Clean URL fragment and navigate to home
-          window.history.replaceState(null, '', '/');
-          
-          // Force navigation to home
+          // Clean URL and redirect
+          console.log('Redirecting to home page...');
           window.location.href = '/';
         } catch (error) {
           console.error('Error processing session ID:', error);
           setUser(null);
           setLoading(false);
+          setChecking(false);
+          // Redirect to login on error
+          window.location.href = '/login';
         }
       } else {
         // No session_id in URL, check existing auth
+        console.log('No OAuth callback, checking existing authentication...');
         checkAuth();
       }
     };
