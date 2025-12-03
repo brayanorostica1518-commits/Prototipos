@@ -65,14 +65,17 @@ export const AuthProvider = ({ children }) => {
       
       if (response.data.authenticated) {
         setUser(response.data.user);
+        console.log('User is authenticated:', response.data.user.email);
       } else {
         setUser(null);
+        console.log('User is not authenticated');
       }
     } catch (error) {
       console.error('Error checking auth:', error);
       setUser(null);
     } finally {
       setChecking(false);
+      console.log('Auth check complete');
     }
   };
 
