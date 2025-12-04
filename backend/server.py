@@ -252,26 +252,50 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 def extract_text_from_excel(file_path: Path) -> str:
     """Extract text content from Excel file with error handling"""
     try:
+        logger.info(f"Attempting to load Excel file: {file_path}")
         wb = openpyxl.load_workbook(file_path, data_only=True)
         text_content = []
+        
+        logger.info(f"Excel file loaded. Found {len(wb.sheetnames)} sheets")
         
         for sheet_name in wb.sheetnames[:10]:  # Limit sheets
             sheet = wb[sheet_name]
             text_content.append(f"\n=== Hoja: {sanitize_text(sheet_name, 100)} ===\n")
             
             # Limit rows to prevent DoS
+            row_count = 0
             for idx, row in enumerate(sheet.iter_rows(values_only=True)):
                 if idx > 10000:  # Max 10k rows
                     break
                 row_text = " | ".join([str(cell)[:500] if cell is not None else "" for cell in row])
                 if row_text.strip():
                     text_content.append(row_text[:2000])  # Limit row length
+                    row_count += 1
+            
+            logger.info(f"Processed {row_count} rows from sheet: {sheet_name}")
         
-        return "\n".join(text_content)[:100000]  # Limit total size
+        result = "\n".join(text_content)[:100000]  # Limit total size
+        logger.info(f"Excel extraction complete. Extracted {len(result)} characters")
+        return result
         
+    except openpyxl.utils.exceptions.InvalidFileException as e:
+        logger.error(f"Invalid Excel file format: {str(e)}")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"El archivo no es un Excel válido (.xlsx). Error: {str(e)}"
+        )
+    except PermissionError as e:
+        logger.error(f"Permission error reading Excel: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail="Error de permisos al leer el archivo"
+        )
     except Exception as e:
-        logger.error(f"Error extracting Excel: {str(e)}")
-        raise HTTPException(status_code=400, detail="Invalid Excel file format")
+        logger.error(f"Error extracting Excel: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Error al procesar el archivo Excel: {str(e)}"
+        )
 
 
 def extract_text_from_word(file_path: Path) -> str:
