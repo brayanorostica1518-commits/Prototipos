@@ -768,15 +768,20 @@ IMPORTANTE:
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error analyzing assessment: {str(e)}")
+        logger.error(f"Error analyzing assessment: {type(e).__name__}: {str(e)}", exc_info=True)
         log_security_event(
             "ANALYSIS_ERROR",
-            {"error": str(e)},
+            {
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "session_id": session_id,
+                "frameworks": frameworks
+            },
             severity="ERROR"
         )
         raise HTTPException(
             status_code=500,
-            detail=get_safe_error_message(e, DEBUG_MODE)
+            detail=f"Error al analizar: {str(e)}"
         )
 
 
