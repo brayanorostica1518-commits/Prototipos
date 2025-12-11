@@ -515,10 +515,11 @@ async def analyze_assessment(
         
         # Verify session belongs to current user
         session = await db.sessions.find_one({
-            "session_id": session_id,
+            "id": session_id,
             "user_id": current_user.id
         })
         if not session:
+            logger.error(f"Session {session_id} not found or access denied for user {current_user.id}")
             raise HTTPException(
                 status_code=403,
                 detail="Session not found or access denied"
