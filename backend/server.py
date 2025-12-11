@@ -801,10 +801,11 @@ async def get_session_messages(
         
         # Verify session belongs to user
         session = await db.sessions.find_one({
-            "session_id": session_id,
+            "id": session_id,
             "user_id": current_user.id
         })
         if not session:
+            logger.error(f"Session {session_id} not found for user {current_user.id} when getting messages")
             raise HTTPException(status_code=403, detail="Session not found or access denied")
         
         messages = await db.messages.find(
