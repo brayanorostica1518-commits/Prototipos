@@ -247,10 +247,12 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Dashboard chart visualization improvements"
-    - "Table rendering in chat interface"
+    - "Google OAuth Authentication System"
+    - "User data isolation and session management"
+    - "Google OAuth Login Flow"
+    - "Document upload and analysis after authentication"
   stuck_tasks: []
-  test_all: false
+  test_all: true
   test_priority: "high_first"
 
 agent_communication:
