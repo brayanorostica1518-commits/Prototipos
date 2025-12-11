@@ -82,7 +82,8 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithGoogle = () => {
     const redirectUrl = `${window.location.origin}`;
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+    const authUrl = process.env.REACT_APP_AUTH_URL || 'https://auth.emergentagent.com';
+    window.location.href = `${authUrl}/?redirect=${encodeURIComponent(redirectUrl)}`;
   };
 
   const logout = async () => {
