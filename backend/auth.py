@@ -163,11 +163,15 @@ async def process_session_id(
     """
     Process session ID from Emergent Auth and create local session
     """
+    # Get auth API URL from environment
+    auth_api_url = os.getenv('AUTH_API_URL', 'https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data')
+    
     try:
         # Call Emergent Auth API to get user data
         async with httpx.AsyncClient() as client:
+            logger.info(f"Calling Emergent Auth API: {auth_api_url}")
             auth_response = await client.get(
-                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                auth_api_url,
                 headers={"X-Session-ID": x_session_id},
                 timeout=10.0
             )
