@@ -234,8 +234,6 @@ export default function ChatInterface() {
     }
   };
 
-  const [isCreatingSession, setIsCreatingSession] = useState(false);
-
   const createSession = async () => {
     // Prevenir múltiples llamadas simultáneas
     if (isCreatingSession) {
