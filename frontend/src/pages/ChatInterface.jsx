@@ -488,8 +488,8 @@ export default function ChatInterface() {
           </div>
 
           <div className="flex-1 flex overflow-hidden">
-            {/* Frameworks Panel */}
-            <div className="w-80 border-r border-cyan-500/20 glass-card overflow-y-auto p-4 space-y-4 custom-scrollbar">
+            {/* Frameworks Panel - Desktop only, modal on mobile */}
+            <div className="hidden lg:block w-64 xl:w-80 border-r border-cyan-500/20 glass-card overflow-y-auto p-4 space-y-4 custom-scrollbar">
               <Card className="p-4 glass-card border-cyan-500/30 shadow-lg">
                 <h3 className="font-semibold text-lg mb-4 cyber-text flex items-center gap-2" style={{ fontFamily: 'Orbitron, monospace' }}>
                   <Zap className="w-5 h-5" />
