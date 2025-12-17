@@ -537,17 +537,17 @@ export default function ChatInterface() {
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 flex flex-col">
-              <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+            <div className="flex-1 flex flex-col min-w-0">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 custom-scrollbar">
                 {messages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center">
-                    <div className="p-8 glass-card rounded-2xl mb-4 border border-cyan-500/30 animate-glow">
-                      <Sparkles className="w-20 h-20 text-cyan-400 mx-auto animate-pulse" />
+                  <div className="flex flex-col items-center justify-center h-full text-center px-4">
+                    <div className="p-6 sm:p-8 glass-card rounded-2xl mb-4 border border-cyan-500/30 animate-glow">
+                      <Sparkles className="w-12 h-12 sm:w-20 sm:h-20 text-cyan-400 mx-auto animate-pulse" />
                     </div>
-                    <h2 className="text-3xl font-bold cyber-text-glow mb-2" style={{ fontFamily: 'Orbitron, monospace' }}>
+                    <h2 className="text-xl sm:text-3xl font-bold cyber-text-glow mb-2" style={{ fontFamily: 'Orbitron, monospace' }}>
                       INICIA TU ANÁLISIS
                     </h2>
-                    <p className="text-gray-400 max-w-md mb-4">
+                    <p className="text-sm sm:text-base text-gray-400 max-w-md mb-4">
                       Sube documentos y selecciona marcos normativos
                     </p>
                     <Button onClick={() => setShowTemplateLibrary(true)} className="neon-button bg-gradient-to-r from-purple-600 to-pink-600">
@@ -558,7 +558,7 @@ export default function ChatInterface() {
                 ) : (
                   messages.map((msg, idx) => (
                     <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}>
-                      <div className={`max-w-[80%] rounded-2xl p-5 shadow-xl ${
+                      <div className={`max-w-full sm:max-w-[85%] lg:max-w-[80%] rounded-2xl p-4 sm:p-5 shadow-xl ${
                         msg.role === "user"
                           ? "chat-bubble-user"
                           : "chat-bubble-assistant"
