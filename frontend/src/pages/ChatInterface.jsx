@@ -596,8 +596,8 @@ export default function ChatInterface() {
               </div>
 
               {/* Input */}
-              <div className="border-t border-cyan-500/20 p-4 glass-card">
-                <div className="flex gap-3">
+              <div className="border-t border-cyan-500/20 p-3 sm:p-4 glass-card">
+                <div className="flex gap-2 sm:gap-3">
                   <Textarea
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
@@ -608,18 +608,90 @@ export default function ChatInterface() {
                       }
                     }}
                     placeholder="Describe tu assessment..."
-                    className="flex-1 min-h-[80px] resize-none bg-gray-900/50 border-cyan-500/30 text-white placeholder:text-gray-600 focus:border-cyan-500"
+                    className="flex-1 min-h-[60px] sm:min-h-[80px] resize-none bg-gray-900/50 border-cyan-500/30 text-white placeholder:text-gray-600 focus:border-cyan-500 text-sm sm:text-base"
                     disabled={isAnalyzing}
                   />
-                  <Button onClick={handleSendMessage} disabled={isAnalyzing} className="neon-button h-[80px] px-6">
-                    {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                  <Button onClick={handleSendMessage} disabled={isAnalyzing} className="neon-button h-[60px] sm:h-[80px] px-4 sm:px-6">
+                    {isAnalyzing ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <Send className="w-4 h-4 sm:w-5 sm:h-5" />}
                   </Button>
                 </div>
               </div>
+              
+              {/* Botón flotante para frameworks en móvil */}
+              <Button
+                onClick={() => setShowMobileFrameworks(true)}
+                className="lg:hidden fixed bottom-20 right-4 z-40 neon-button rounded-full w-14 h-14 p-0 shadow-2xl shadow-cyan-500/50"
+              >
+                <Zap className="w-6 h-6" />
+              </Button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Modal de Frameworks para Móvil */}
+      {showMobileFrameworks && (
+        <div className="lg:hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+          <div className="fixed inset-0 bg-black/80" onClick={() => setShowMobileFrameworks(false)} />
+          <div className="relative w-full sm:max-w-lg bg-gray-900 border border-cyan-500/30 rounded-t-3xl sm:rounded-2xl p-6 max-h-[80vh] overflow-y-auto custom-scrollbar animate-slide-up">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold cyber-text" style={{ fontFamily: 'Orbitron, monospace' }}>
+                FRAMEWORKS & ARCHIVOS
+              </h3>
+              <Button onClick={() => setShowMobileFrameworks(false)} variant="ghost" size="sm">
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            {/* Frameworks */}
+            <Card className="p-4 glass-card border-cyan-500/30 shadow-lg mb-4">
+              <h4 className="font-semibold text-base mb-4 cyber-text flex items-center gap-2">
+                <Zap className="w-4 h-4" />
+                FRAMEWORKS
+              </h4>
+              <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+                {FRAMEWORKS.map((framework) => (
+                  <div key={framework.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-cyan-500/10 transition-colors">
+                    <Checkbox
+                      id={`mobile-${framework.id}`}
+                      checked={selectedFrameworks.includes(framework.id)}
+                      onCheckedChange={() => handleFrameworkChange(framework.id)}
+                      className="data-[state=checked]:bg-cyan-600 border-cyan-500/50"
+                    />
+                    <label htmlFor={`mobile-${framework.id}`} className="text-sm font-medium text-gray-300 cursor-pointer flex-1">
+                      {framework.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* Upload de Archivos */}
+            <Card className="p-4 glass-card border-cyan-500/30 shadow-lg">
+              <h4 className="font-semibold text-base mb-4 cyber-text flex items-center gap-2">
+                <Upload className="w-4 h-4" />
+                ARCHIVOS
+              </h4>
+              <div {...getRootProps()} className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all ${isDragActive ? "border-cyan-500 bg-cyan-500/10" : "border-cyan-500/30 hover:border-cyan-500/60 hover:bg-gray-800/30"}`}>
+                <input {...getInputProps()} />
+                <Upload className="w-8 h-8 mx-auto mb-2 text-cyan-400" />
+                <p className="text-sm text-gray-400">{isDragActive ? "Suelta aquí" : "Arrastra o haz clic"}</p>
+                <p className="text-xs text-gray-600 mt-1">PDF, Excel, Word, CSV</p>
+              </div>
+              {uploadedFiles.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {uploadedFiles.map((file, idx) => (
+                    <div key={idx} className="flex items-center gap-2 p-2 glass-card border-cyan-500/30 rounded-lg">
+                      <FileText className="w-4 h-4 text-cyan-400" />
+                      <span className="text-sm text-gray-300 truncate">{file.original_name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
+      )}
 
       <TemplateLibrary
         isOpen={showTemplateLibrary}
