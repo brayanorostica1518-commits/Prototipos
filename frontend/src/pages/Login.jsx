@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Shield, Lock, CheckCircle } from 'lucide-react';
+import Footer from '@/components/Footer';
 
 export default function Login() {
   const { user, loginWithGoogle } = useAuth();
