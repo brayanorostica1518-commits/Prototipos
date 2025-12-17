@@ -710,6 +710,13 @@ export default function ChatInterface() {
         onClose={() => setShowTemplateLibrary(false)}
         onSelectTemplate={handleTemplateSelect}
       />
+      
+      {/* Onboarding Tour */}
+      {showOnboarding && (
+        <OnboardingTour 
+          onComplete={() => setShowOnboarding(false)}
+        />
+      )}
     </div>
   );
 }
