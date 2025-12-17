@@ -379,11 +379,30 @@ export default function ChatInterface() {
                 </Button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-                {sessions.map((session) => (
+              <div className="w-full neon-button">
+                <Button onClick={createSession} className="w-full flex items-center justify-center">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nueva Sesión
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+              {sessions.length === 0 ? (
+                <div className="text-center text-gray-500 text-sm mt-8">
+                  No hay sesiones aún
+                </div>
+              ) : (
+                sessions.map((session) => (
                   <button
                     key={session.id}
-                    onClick={() => loadSession(session.id)}
+                    onClick={() => {
+                      loadSession(session.id);
+                      // Cerrar sidebar en móvil después de seleccionar
+                      if (window.innerWidth < 1024) {
+                        setShowSidebar(false);
+                      }
+                    }}
                     className={`w-full text-left p-3 rounded-lg transition-all glass-card ${
                       session.id === sessionId ? 'border-cyan-500 bg-cyan-500/10' : 'border-gray-700/50 hover:border-cyan-500/50'
                     }`}
@@ -398,10 +417,9 @@ export default function ChatInterface() {
                       })}
                     </span>
                   </button>
-                ))}
-              </div>
-            </>
-          )}
+                ))
+              )}
+            </div>
         </div>
 
         {/* Main Content */}
