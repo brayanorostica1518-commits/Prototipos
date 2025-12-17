@@ -579,11 +579,17 @@ select:focus {
 
 
 /* Ocultar badge de Emergent en móvil para no obstruir el input */
-@media (max-width: 768px) {
+#emergent-badge {
+  display: none !important;
+}
+
+/* Si necesitas mostrarlo en desktop, descomenta esto:
+@media (min-width: 1024px) {
   #emergent-badge {
-    display: none !important;
+    display: flex !important;
   }
 }
+*/
 
   }
 }
