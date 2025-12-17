@@ -209,6 +209,13 @@ export default function ChatInterface() {
   useEffect(() => {
     loadSessions();
     createSession();
+    
+    // Mostrar onboarding si es primera vez
+    const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
+    if (!hasSeenOnboarding) {
+      // Delay para que cargue la UI primero
+      setTimeout(() => setShowOnboarding(true), 1000);
+    }
   }, []);
 
   const loadSessions = async () => {
