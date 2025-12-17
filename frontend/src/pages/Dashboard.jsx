@@ -322,7 +322,7 @@ export default function Dashboard() {
         doc.setFontSize(8);
         doc.setTextColor(128, 128, 128);
         doc.text(`Página ${i} de ${pageCount}`, 105, 290, { align: 'center' });
-        doc.text('Assessment AI - Reporte Confidencial', 20, 290);
+        doc.text('SmartSecAssess - Reporte Confidencial', 20, 290);
       }
 
       doc.save(`Reporte-Assessment-${new Date().toISOString().split('T')[0]}.pdf`);
