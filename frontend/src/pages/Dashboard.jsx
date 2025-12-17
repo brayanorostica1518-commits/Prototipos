@@ -325,7 +325,7 @@ export default function Dashboard() {
         doc.text('SmartSecAssess - Reporte Confidencial', 20, 290);
       }
 
-      doc.save(`Reporte-Assessment-${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`SmartSecAssess-Reporte-${new Date().toISOString().split('T')[0]}.pdf`);
       toast.success("Reporte completo generado exitosamente");
     } catch (error) {
       console.error("Error generating PDF:", error);
