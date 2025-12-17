@@ -470,11 +470,11 @@ export default function ChatInterface() {
                   </div>
                   <div className="min-w-0">
                     <h1 className="text-base lg:text-2xl font-bold cyber-text-glow truncate" style={{ fontFamily: 'Orbitron, monospace' }}>
-                      ASSESSMENT AI
+                      SMARTSECASSESS
                     </h1>
                     <p className="text-xs lg:text-sm text-cyan-400/70 hidden sm:flex items-center gap-2">
                       <span className="status-online"></span>
-                      Sistema de Análisis
+                      Análisis Inteligente de Seguridad
                     </p>
                   </div>
                 </div>
