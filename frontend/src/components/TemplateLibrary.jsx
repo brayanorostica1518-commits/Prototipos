@@ -78,54 +78,55 @@ export default function TemplateLibrary({ isOpen, onClose, onSelectTemplate }) {
   return (
     <>
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 animate-fade-in">
-        <div className="flex items-center justify-center min-h-screen p-4">
-          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black border border-cyan-500/30 rounded-xl shadow-2xl shadow-cyan-500/20 w-full max-w-6xl max-h-[90vh] overflow-hidden animate-slide-in">
+        <div className="flex items-center justify-center min-h-screen p-2 sm:p-4">
+          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black border border-cyan-500/30 rounded-xl shadow-2xl shadow-cyan-500/20 w-full max-w-6xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden animate-slide-in">
             {/* Header */}
-            <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border-b border-cyan-500/30 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-cyan-500/20 rounded-lg">
-                    <FileText className="w-6 h-6 text-cyan-400" />
+            <div className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border-b border-cyan-500/30 p-3 sm:p-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <div className="p-1.5 sm:p-2 bg-cyan-500/20 rounded-lg flex-shrink-0">
+                    <FileText className="w-4 h-4 sm:w-6 sm:h-6 text-cyan-400" />
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'Space Mono, monospace' }}>
-                      BIBLIOTECA DE PLANTILLAS
+                  <div className="min-w-0">
+                    <h2 className="text-base sm:text-2xl font-bold text-white truncate" style={{ fontFamily: 'Space Mono, monospace' }}>
+                      PLANTILLAS
                     </h2>
-                    <p className="text-cyan-400/70 text-sm">Selecciona una plantilla para comenzar</p>
+                    <p className="text-cyan-400/70 text-xs sm:text-sm hidden sm:block">Selecciona una plantilla</p>
                   </div>
                 </div>
                 <Button
                   onClick={onClose}
                   variant="ghost"
-                  className="text-gray-400 hover:text-white hover:bg-white/10"
+                  size="sm"
+                  className="text-gray-400 hover:text-white hover:bg-white/10 flex-shrink-0"
                   data-testid="close-template-library"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               </div>
 
               {/* Search and Filter */}
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <Input
                     type="text"
-                    placeholder="Buscar plantillas..."
+                    placeholder="Buscar..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 bg-gray-900/50 border-cyan-500/30 text-white placeholder:text-gray-500 focus:border-cyan-500"
+                    className="pl-10 bg-gray-900/50 border-cyan-500/30 text-white placeholder:text-gray-500 focus:border-cyan-500 text-sm"
                     data-testid="template-search"
                   />
                 </div>
                 <div className="relative">
-                  <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="pl-10 pr-8 py-2 bg-gray-900/50 border border-cyan-500/30 text-white rounded-md focus:border-cyan-500 focus:outline-none"
+                    className="w-full sm:w-auto pl-10 pr-8 py-2 bg-gray-900/50 border border-cyan-500/30 text-white rounded-md focus:border-cyan-500 focus:outline-none text-sm"
                     data-testid="category-filter"
                   >
-                    <option value="all">Todas las categorías</option>
+                    <option value="all">Todas</option>
                     {categories.map(cat => (
                       <option key={cat.value} value={cat.value}>
                         {cat.label} ({cat.count})
@@ -137,7 +138,7 @@ export default function TemplateLibrary({ isOpen, onClose, onSelectTemplate }) {
             </div>
 
             {/* Templates Grid */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)] custom-scrollbar">
+            <div className="p-3 sm:p-6 overflow-y-auto max-h-[calc(95vh-160px)] sm:max-h-[calc(90vh-200px)] custom-scrollbar">
               {loading ? (
                 <div className="flex items-center justify-center h-64">
                   <div className="text-cyan-400">Cargando plantillas...</div>
