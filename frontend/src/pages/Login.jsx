@@ -52,10 +52,10 @@ export default function Login() {
             <Shield className="w-16 h-16 text-white" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold cyber-text-glow mb-2" style={{ fontFamily: 'Orbitron, monospace' }}>
-            ASSESSMENT AI
+            SMARTSECASSESS
           </h1>
           <p className="text-gray-400 text-lg">
-            Plataforma de Análisis de Seguridad y Cumplimiento
+            Análisis Inteligente de Seguridad y Cumplimiento
           </p>
         </div>
 
