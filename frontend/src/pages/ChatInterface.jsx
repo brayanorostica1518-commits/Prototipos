@@ -233,14 +233,28 @@ export default function ChatInterface() {
     }
   };
 
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+
   const createSession = async () => {
+    // Prevenir múltiples llamadas simultáneas
+    if (isCreatingSession) {
+      console.log('Ya se está creando una sesión...');
+      return;
+    }
+    
     try {
+      setIsCreatingSession(true);
       const response = await secureAxios.post('/sessions');
       setSessionId(response.data.id);
-      loadSessions();
+      setMessages([]); // Limpiar mensajes de sesión anterior
+      setUploadedFiles([]); // Limpiar archivos
+      await loadSessions();
+      toast.success('Nueva sesión creada');
     } catch (error) {
       console.error("Error creating session:", error);
       toast.error("Error al crear la sesión");
+    } finally {
+      setIsCreatingSession(false);
     }
   };
 
