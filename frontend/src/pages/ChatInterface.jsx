@@ -344,25 +344,31 @@ export default function ChatInterface() {
 
   return (
     <div className="min-h-screen cyber-grid bg-gradient-to-br from-gray-900 via-black to-gray-900">
-      <div className="flex h-screen">
-        {/* Sidebar */}
+      <div className="flex h-screen overflow-hidden">
+        {/* Sidebar - Desktop y Mobile */}
         <div className={`${
-          showSidebar ? 'w-80' : 'w-0'
-        } transition-all duration-300 glass-card border-r border-cyan-500/20 overflow-hidden flex flex-col`}>
+          showSidebar ? 'translate-x-0' : '-translate-x-full'
+        } fixed lg:relative inset-y-0 left-0 z-50 w-80 lg:w-64 xl:w-80 transition-transform duration-300 glass-card border-r border-cyan-500/20 flex flex-col bg-gray-900/95 lg:bg-transparent`}>
+          {/* Overlay para cerrar en móvil */}
           {showSidebar && (
-            <>
-              <div className="p-4 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-600/10 to-blue-600/10">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Terminal className="w-5 h-5 text-cyan-400" />
-                    <h2 className="text-lg font-bold cyber-text" style={{ fontFamily: 'Orbitron, monospace' }}>
-                      SESIONES
-                    </h2>
-                  </div>
-                  <Button onClick={() => setShowSidebar(false)} variant="ghost" size="sm" className="text-gray-400 hover:text-cyan-400">
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
+            <div 
+              className="fixed inset-0 bg-black/60 lg:hidden -z-10" 
+              onClick={() => setShowSidebar(false)}
+            />
+          )}
+          
+          <div className="p-4 border-b border-cyan-500/20 bg-gradient-to-r from-cyan-600/10 to-blue-600/10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-5 h-5 text-cyan-400" />
+                <h2 className="text-base lg:text-lg font-bold cyber-text" style={{ fontFamily: 'Orbitron, monospace' }}>
+                  SESIONES
+                </h2>
+              </div>
+              <Button onClick={() => setShowSidebar(false)} variant="ghost" size="sm" className="text-gray-400 hover:text-cyan-400">
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
                 <Button
                   onClick={createSession}
                   className="w-full neon-button"
