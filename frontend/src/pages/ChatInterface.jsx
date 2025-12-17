@@ -196,6 +196,7 @@ export default function ChatInterface() {
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
   const [showMobileFrameworks, setShowMobileFrameworks] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
