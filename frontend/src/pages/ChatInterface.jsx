@@ -423,44 +423,63 @@ export default function ChatInterface() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <div className="border-b border-cyan-500/20 glass-card p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                {!showSidebar && (
-                  <Button onClick={() => setShowSidebar(true)} variant="ghost" size="sm" className="text-gray-400 hover:text-cyan-400">
-                    <Menu className="w-5 h-5" />
-                  </Button>
-                )}
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg shadow-lg shadow-cyan-500/30 animate-glow">
-                    <Shield className="w-6 h-6 text-white" />
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Header - Responsive */}
+          <div className="border-b border-cyan-500/20 glass-card p-3 lg:p-4">
+            <div className="flex items-center justify-between gap-2">
+              {/* Left Side */}
+              <div className="flex items-center gap-2 lg:gap-4 min-w-0">
+                <Button 
+                  onClick={() => setShowSidebar(true)} 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-gray-400 hover:text-cyan-400 flex-shrink-0 lg:hidden"
+                >
+                  <Menu className="w-5 h-5" />
+                </Button>
+                
+                <div className="flex items-center gap-2 lg:gap-3 min-w-0">
+                  <div className="p-2 lg:p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg shadow-lg shadow-cyan-500/30 animate-glow flex-shrink-0">
+                    <Shield className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
                   </div>
-                  <div>
-                    <h1 className="text-2xl font-bold cyber-text-glow" style={{ fontFamily: 'Orbitron, monospace' }}>
+                  <div className="min-w-0">
+                    <h1 className="text-base lg:text-2xl font-bold cyber-text-glow truncate" style={{ fontFamily: 'Orbitron, monospace' }}>
                       ASSESSMENT AI
                     </h1>
-                    <p className="text-sm text-cyan-400/70 flex items-center gap-2">
+                    <p className="text-xs lg:text-sm text-cyan-400/70 hidden sm:flex items-center gap-2">
                       <span className="status-online"></span>
-                      Sistema de Análisis de Cumplimiento
+                      Sistema de Análisis
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button onClick={() => setShowTemplateLibrary(true)} className="neon-button bg-gradient-to-r from-purple-600 to-pink-600">
-                  <FileCode className="w-4 h-4 mr-2" />
-                  Plantillas
+              
+              {/* Right Side */}
+              <div className="flex items-center gap-1 lg:gap-2 flex-shrink-0">
+                <Button 
+                  onClick={() => setShowTemplateLibrary(true)} 
+                  className="neon-button bg-gradient-to-r from-purple-600 to-pink-600 hidden sm:flex"
+                  size="sm"
+                >
+                  <FileCode className="w-4 h-4 lg:mr-2" />
+                  <span className="hidden lg:inline">Plantillas</span>
                 </Button>
-                <Button onClick={() => navigate('/reports')} className="neon-button bg-gradient-to-r from-green-600 to-emerald-600">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Informes
+                <Button 
+                  onClick={() => navigate('/reports')} 
+                  className="neon-button bg-gradient-to-r from-green-600 to-emerald-600 hidden sm:flex"
+                  size="sm"
+                >
+                  <FileText className="w-4 h-4 lg:mr-2" />
+                  <span className="hidden lg:inline">Informes</span>
                 </Button>
                 {messages.length > 0 && (
-                  <Button onClick={handleViewDashboard} className="neon-button">
-                    <BarChart3 className="w-4 h-4 mr-2" />
-                    Dashboard
+                  <Button 
+                    onClick={handleViewDashboard} 
+                    className="neon-button hidden md:flex"
+                    size="sm"
+                  >
+                    <BarChart3 className="w-4 h-4 lg:mr-2" />
+                    <span className="hidden lg:inline">Dashboard</span>
                   </Button>
                 )}
                 <UserMenu />
