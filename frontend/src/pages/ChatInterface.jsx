@@ -191,8 +191,9 @@ export default function ChatInterface() {
   const [selectedFrameworks, setSelectedFrameworks] = useState(["ISO 27001"]);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(false); // Cerrado por defecto en móvil
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
+  const [showMobileFrameworks, setShowMobileFrameworks] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
