@@ -370,25 +370,18 @@ export default function ChatInterface() {
                 <X className="w-4 h-4" />
               </Button>
             </div>
-                <Button
-                  onClick={createSession}
-                  className="w-full neon-button"
-                  data-testid="new-session-btn"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nueva Sesión
-                </Button>
-              </div>
+            
+            <Button
+              onClick={createSession}
+              className="w-full neon-button"
+              data-testid="new-session-btn"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nueva Sesión
+            </Button>
+          </div>
 
-              <div className="w-full neon-button">
-                <Button onClick={createSession} className="w-full flex items-center justify-center">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nueva Sesión
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
               {sessions.length === 0 ? (
                 <div className="text-center text-gray-500 text-sm mt-8">
                   No hay sesiones aún
