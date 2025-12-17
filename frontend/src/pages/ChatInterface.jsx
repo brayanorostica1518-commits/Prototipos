@@ -401,11 +401,12 @@ export default function ChatInterface() {
             
             <Button
               onClick={createSession}
+              disabled={isCreatingSession}
               className="w-full neon-button"
               data-testid="new-session-btn"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Nueva Sesión
+              {isCreatingSession ? 'Creando...' : 'Nueva Sesión'}
             </Button>
           </div>
 
