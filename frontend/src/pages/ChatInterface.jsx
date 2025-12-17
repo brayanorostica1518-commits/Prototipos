@@ -543,20 +543,32 @@ export default function ChatInterface() {
             <div className="flex-1 flex flex-col min-w-0">
               <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 custom-scrollbar">
                 {messages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center px-4">
-                    <div className="p-6 sm:p-8 glass-card rounded-2xl mb-4 border border-cyan-500/30 animate-glow">
+                  <div className="flex flex-col items-center justify-center h-full text-center px-4 py-8">
+                    <div className="p-6 sm:p-8 glass-card rounded-2xl mb-4 sm:mb-6 border border-cyan-500/30 animate-glow">
                       <Sparkles className="w-12 h-12 sm:w-20 sm:h-20 text-cyan-400 mx-auto animate-pulse" />
                     </div>
-                    <h2 className="text-xl sm:text-3xl font-bold cyber-text-glow mb-2" style={{ fontFamily: 'Orbitron, monospace' }}>
+                    <h2 className="text-xl sm:text-3xl font-bold cyber-text-glow mb-3 sm:mb-4" style={{ fontFamily: 'Orbitron, monospace' }}>
                       INICIA TU ANÁLISIS
                     </h2>
-                    <p className="text-sm sm:text-base text-gray-400 max-w-md mb-4">
+                    <p className="text-sm sm:text-base text-gray-400 max-w-md mb-6">
                       Sube documentos y selecciona marcos normativos
                     </p>
-                    <Button onClick={() => setShowTemplateLibrary(true)} className="neon-button bg-gradient-to-r from-purple-600 to-pink-600">
-                      <FileCode className="w-4 h-4 mr-2" />
-                      O usa una plantilla
-                    </Button>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button 
+                        onClick={() => setShowTemplateLibrary(true)} 
+                        className="neon-button bg-gradient-to-r from-purple-600 to-pink-600"
+                      >
+                        <FileCode className="w-4 h-4 mr-2" />
+                        Usar plantilla
+                      </Button>
+                      <Button 
+                        onClick={() => setShowOnboarding(true)}
+                        variant="outline"
+                        className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10"
+                      >
+                        Ver tutorial
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   messages.map((msg, idx) => (
