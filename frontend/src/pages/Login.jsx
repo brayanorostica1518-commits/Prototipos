@@ -128,6 +128,9 @@ export default function Login() {
           </div>
         </div>
       </div>
+      
+      {/* Footer with legal links */}
+      <Footer />
     </div>
   );
 }
