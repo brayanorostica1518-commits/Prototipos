@@ -592,7 +592,7 @@ export default function ChatInterface() {
 
               {/* Input */}
               <div className="border-t border-cyan-500/20 p-3 sm:p-4 glass-card">
-                <div className="flex gap-2 sm:gap-3">
+                <div className="flex gap-2 sm:gap-3 items-end">
                   <Textarea
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
@@ -606,21 +606,38 @@ export default function ChatInterface() {
                     className="flex-1 min-h-[60px] sm:min-h-[80px] resize-none bg-gray-900/50 border-cyan-500/30 text-white placeholder:text-gray-600 focus:border-cyan-500 text-sm sm:text-base"
                     disabled={isAnalyzing}
                   />
-                  <Button onClick={handleSendMessage} disabled={isAnalyzing} className="neon-button h-[60px] sm:h-[80px] px-4 sm:px-6">
+                  <Button 
+                    onClick={handleSendMessage} 
+                    disabled={isAnalyzing} 
+                    className="neon-button h-[60px] sm:h-[80px] px-4 sm:px-6 flex-shrink-0"
+                  >
                     {isAnalyzing ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <Send className="w-4 h-4 sm:w-5 sm:h-5" />}
                   </Button>
                 </div>
               </div>
-              
-              {/* Botón flotante para frameworks en móvil */}
-              <Button
-                onClick={() => setShowMobileFrameworks(true)}
-                className="lg:hidden fixed bottom-20 right-4 z-40 neon-button rounded-full w-14 h-14 p-0 shadow-2xl shadow-cyan-500/50"
-              >
-                <Zap className="w-6 h-6" />
-              </Button>
             </div>
           </div>
+        </div>
+        
+        {/* Botones flotantes para móvil - Mejor posicionados */}
+        <div className="lg:hidden fixed bottom-24 right-4 z-40 flex flex-col gap-3">
+          {/* Botón de Frameworks */}
+          <Button
+            onClick={() => setShowMobileFrameworks(true)}
+            className="neon-button rounded-full w-14 h-14 p-0 shadow-2xl shadow-cyan-500/50"
+            title="Frameworks y Archivos"
+          >
+            <Zap className="w-6 h-6" />
+          </Button>
+          
+          {/* Botón de ayuda/tutorial */}
+          <Button
+            onClick={() => setShowOnboarding(true)}
+            className="bg-purple-600 hover:bg-purple-700 rounded-full w-12 h-12 p-0 shadow-lg shadow-purple-500/50"
+            title="Tutorial"
+          >
+            <span className="text-lg">?</span>
+          </Button>
         </div>
       </div>
 
