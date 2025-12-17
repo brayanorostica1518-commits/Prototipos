@@ -192,7 +192,10 @@ export default function ChatInterface() {
   const [selectedFrameworks, setSelectedFrameworks] = useState(["ISO 27001"]);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(false); // Cerrado por defecto en móvil
+  // Sidebar abierto por defecto en desktop, cerrado en móvil
+  const [showSidebar, setShowSidebar] = useState(
+    typeof window !== 'undefined' ? window.innerWidth >= 1024 : false
+  );
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
   const [showMobileFrameworks, setShowMobileFrameworks] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
