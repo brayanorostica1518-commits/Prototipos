@@ -194,6 +194,7 @@ export default function ChatInterface() {
   const [showSidebar, setShowSidebar] = useState(false); // Cerrado por defecto en móvil
   const [showTemplateLibrary, setShowTemplateLibrary] = useState(false);
   const [showMobileFrameworks, setShowMobileFrameworks] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
