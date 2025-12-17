@@ -19,6 +19,15 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
         <title>Emergent | Fullstack App</title>
+        <style>
+            /* Ocultar badge de Emergent para evitar obstrucción del UI */
+            #emergent-badge {
+                display: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+            }
+        </style>
         <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
         <!--
         These two scripts have been added for the testing, please do not edit or remove them
