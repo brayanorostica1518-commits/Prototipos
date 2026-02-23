@@ -85,251 +85,521 @@ export default function Dashboard() {
     if (!analysisData) return;
 
     setExporting(true);
-    toast.info("Generando reporte completo...");
+    toast.info("Generando informe profesional de auditoría...");
 
     try {
       const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      const contentWidth = pageWidth - margin * 2;
       let yPos = 20;
 
+      const addPageHeader = (title) => {
+        doc.setFillColor(10, 25, 47);
+        doc.rect(0, 0, pageWidth, 18, 'F');
+        doc.setFillColor(6, 182, 212);
+        doc.rect(0, 18, pageWidth, 1.5, 'F');
+        doc.setTextColor(6, 182, 212);
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text(title, pageWidth / 2, 12, { align: 'center' });
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'normal');
+        return 28;
+      };
+
+      const checkNewPage = (needed = 25) => {
+        if (yPos + needed > pageHeight - 25) {
+          doc.addPage();
+          yPos = 20;
+          return true;
+        }
+        return false;
+      };
+
+      const addSectionTitle = (text) => {
+        checkNewPage(20);
+        doc.setFillColor(10, 25, 47);
+        doc.roundedRect(margin - 2, yPos - 5, contentWidth + 4, 10, 1, 1, 'F');
+        doc.setTextColor(6, 182, 212);
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.text(text, margin + 2, yPos + 2);
+        doc.setTextColor(0, 0, 0);
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(10);
+        yPos += 14;
+      };
+
+      const addSubTitle = (text) => {
+        checkNewPage(12);
+        doc.setTextColor(10, 25, 47);
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'bold');
+        doc.text(text, margin, yPos);
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        yPos += 7;
+      };
+
+      const addParagraph = (text, indent = 0) => {
+        doc.setFontSize(9.5);
+        const lines = doc.splitTextToSize(text, contentWidth - indent);
+        for (const line of lines) {
+          checkNewPage(6);
+          doc.text(line, margin + indent, yPos);
+          yPos += 4.8;
+        }
+        yPos += 2;
+      };
+
+      const addListItem = (text, indent = 4) => {
+        doc.setFontSize(9.5);
+        const lines = doc.splitTextToSize(text, contentWidth - indent - 4);
+        checkNewPage(6);
+        doc.setTextColor(6, 182, 212);
+        doc.text('\u2022', margin + indent, yPos);
+        doc.setTextColor(0, 0, 0);
+        doc.text(lines[0], margin + indent + 4, yPos);
+        yPos += 4.8;
+        for (let i = 1; i < lines.length; i++) {
+          checkNewPage(6);
+          doc.text(lines[i], margin + indent + 4, yPos);
+          yPos += 4.8;
+        }
+      };
+
       // ===== PORTADA =====
-      doc.setFillColor(59, 130, 246); // Blue
-      doc.rect(0, 0, 210, 60, 'F');
-      
+      doc.setFillColor(10, 25, 47);
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+      doc.setFillColor(6, 182, 212);
+      doc.rect(0, 55, pageWidth, 2, 'F');
+      doc.rect(0, 145, pageWidth, 2, 'F');
+
+      doc.setTextColor(6, 182, 212);
+      doc.setFontSize(10);
+      doc.text('CONFIDENCIAL', pageWidth / 2, 35, { align: 'center' });
+
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(28);
-      doc.text("REPORTE DE ASSESSMENT", 105, 30, { align: 'center' });
-      
-      doc.setFontSize(14);
-      doc.text("Análisis de Cumplimiento Normativo", 105, 42, { align: 'center' });
-      
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(12);
-      yPos = 75;
-      doc.text(`Fecha de generación: ${new Date().toLocaleDateString('es-ES', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      })}`, 20, yPos);
-      
-      yPos += 10;
-      doc.text(`ID de sesión: ${sessionId.substring(0, 8)}...`, 20, yPos);
-      
-      // Frameworks evaluados
-      yPos += 15;
-      doc.setFontSize(14);
-      doc.setTextColor(59, 130, 246);
-      doc.text("Marcos Normativos Evaluados:", 20, yPos);
-      
-      doc.setFontSize(11);
-      doc.setTextColor(0, 0, 0);
-      yPos += 8;
-      (analysisData.frameworks || []).forEach((fw) => {
-        doc.text(`• ${fw}`, 25, yPos);
-        yPos += 6;
-      });
+      doc.setFont(undefined, 'bold');
+      doc.text('INFORME DE', pageWidth / 2, 78, { align: 'center' });
+      doc.text('AUDITORÍA', pageWidth / 2, 92, { align: 'center' });
 
-      // ===== PÁGINA 2: RESUMEN EJECUTIVO =====
-      doc.addPage();
-      yPos = 20;
-      
-      doc.setFillColor(59, 130, 246);
-      doc.rect(0, 0, 210, 15, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(18);
-      doc.text("RESUMEN EJECUTIVO", 105, 10, { align: 'center' });
-      
-      doc.setTextColor(0, 0, 0);
-      yPos = 30;
-      
-      // Extract executive summary from analysis
-      const analysisText = analysisData.analysis || '';
-      const summaryMatch = analysisText.match(/1\. RESUMEN EJECUTIVO([\s\S]*?)(?=2\.|$)/i);
-      const summaryText = summaryMatch ? summaryMatch[1].trim() : analysisText.substring(0, 500);
-      
-      doc.setFontSize(11);
-      const splitSummary = doc.splitTextToSize(summaryText, 170);
-      doc.text(splitSummary, 20, yPos);
-      
-      yPos += (splitSummary.length * 5) + 15;
+      doc.setTextColor(6, 182, 212);
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'normal');
+      doc.text('Evaluación de Cumplimiento Normativo', pageWidth / 2, 110, { align: 'center' });
 
-      // Tabla de cumplimiento resumida
-      if (yPos > 250) {
-        doc.addPage();
-        yPos = 20;
+      doc.setFontSize(11);
+      doc.text('SmartSecAssess', pageWidth / 2, 125, { align: 'center' });
+
+      doc.setTextColor(180, 200, 220);
+      doc.setFontSize(10);
+      const dateStr = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+      doc.text(`Fecha de emisión: ${dateStr}`, pageWidth / 2, 165, { align: 'center' });
+      doc.text(`Referencia: SSA-${sessionId.substring(0, 8).toUpperCase()}`, pageWidth / 2, 175, { align: 'center' });
+
+      const fws = analysisData.frameworks || [];
+      if (fws.length > 0) {
+        doc.setTextColor(150, 170, 190);
+        doc.setFontSize(9);
+        doc.text('Marcos normativos evaluados:', pageWidth / 2, 195, { align: 'center' });
+        doc.setTextColor(6, 182, 212);
+        doc.text(fws.join(' | '), pageWidth / 2, 205, { align: 'center' });
       }
-      
-      const complianceData = Object.entries(analysisData.compliance_scores || {}).map(([framework, score]) => {
-        let status = "Crítico";
-        let color = [220, 38, 38];
-        if (score >= 80) {
-          status = "Excelente";
-          color = [34, 197, 94];
-        } else if (score >= 60) {
-          status = "Aceptable";
-          color = [234, 179, 8];
-        } else if (score >= 40) {
-          status = "Bajo";
-          color = [249, 115, 22];
-        }
-        
-        return [framework, `${score}%`, { content: status, styles: { textColor: color, fontStyle: 'bold' } }];
-      });
-      
-      autoTable(doc, {
-        startY: yPos,
-        head: [['Marco Normativo', 'Cumplimiento', 'Estado']],
-        body: complianceData,
-        headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255] },
-        alternateRowStyles: { fillColor: [248, 250, 252] },
-        margin: { left: 20, right: 20 }
-      });
 
-      // ===== PÁGINA 3: GRÁFICAS =====
+      doc.setTextColor(100, 120, 140);
+      doc.setFontSize(8);
+      doc.text('Este documento es confidencial y de uso exclusivo del destinatario.', pageWidth / 2, pageHeight - 20, { align: 'center' });
+
+      // ===== ÍNDICE =====
       doc.addPage();
-      
-      doc.setFillColor(59, 130, 246);
-      doc.rect(0, 0, 210, 15, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(18);
-      doc.text("ANÁLISIS VISUAL", 105, 10, { align: 'center' });
-      
-      yPos = 25;
+      yPos = addPageHeader('ÍNDICE DE CONTENIDOS');
 
-      // Capturar gráficas como imágenes
+      const tocItems = [
+        '1. Resumen Ejecutivo',
+        '2. Alcance y Metodología',
+        '3. Nivel Global de Cumplimiento',
+        '4. Hallazgos Clasificados',
+        '5. Matriz de Riesgos Consolidada',
+        '6. Análisis Detallado Completo',
+        '7. Recomendaciones',
+        '8. Conclusión Ejecutiva',
+        '9. Nota Legal'
+      ];
+
+      doc.setFontSize(11);
+      tocItems.forEach((item, i) => {
+        doc.setTextColor(10, 25, 47);
+        doc.setFont(undefined, 'bold');
+        doc.text(item, margin + 5, yPos);
+        doc.setFont(undefined, 'normal');
+        yPos += 9;
+      });
+
+      // Parse AI analysis sections
+      const analysisText = analysisData.analysis || '';
+      const parseSectionContent = (sectionPattern, nextPattern) => {
+        const regex = new RegExp(sectionPattern + '([\\s\\S]*?)(?=' + nextPattern + '|$)', 'i');
+        const match = analysisText.match(regex);
+        return match ? match[1].trim() : '';
+      };
+
+      // ===== 1. RESUMEN EJECUTIVO =====
+      doc.addPage();
+      yPos = addPageHeader('INFORME DE AUDITORÍA - SmartSecAssess');
+      addSectionTitle('1. RESUMEN EJECUTIVO');
+
+      const summaryContent = parseSectionContent('1\\.\\s*RESUMEN EJECUTIVO', '2\\.\\s*');
+      if (summaryContent) {
+        const paragraphs = summaryContent.split(/\n\n+|\n(?=[A-Z])/);
+        paragraphs.forEach(p => {
+          const trimmed = p.trim();
+          if (trimmed && !trimmed.match(/^[-|=]+$/)) {
+            if (trimmed.startsWith('- ')) {
+              addListItem(trimmed.substring(2));
+            } else {
+              addParagraph(trimmed);
+            }
+          }
+        });
+      } else {
+        addParagraph('Se ha realizado una evaluación integral de cumplimiento normativo utilizando inteligencia artificial, analizando la documentación proporcionada contra los marcos normativos seleccionados. Los resultados se presentan a continuación.');
+      }
+
+      // ===== 2. ALCANCE Y METODOLOGÍA =====
+      yPos += 4;
+      addSectionTitle('2. ALCANCE Y METODOLOGÍA');
+
+      const scopeContent = parseSectionContent('2\\.\\s*(?:CONTEXTO|ALCANCE)', '3\\.\\s*');
+      if (scopeContent) {
+        scopeContent.split('\n').forEach(line => {
+          const t = line.trim();
+          if (!t || t.match(/^[-|=]+$/)) return;
+          if (t.startsWith('- ')) addListItem(t.substring(2));
+          else if (t.endsWith(':') && t.length < 80) addSubTitle(t);
+          else addParagraph(t);
+        });
+      } else {
+        addParagraph(`Marcos normativos evaluados: ${fws.join(', ')}`);
+        addParagraph('Metodología: Análisis automatizado mediante IA con verificación cruzada de controles normativos, evaluación de evidencia documental y clasificación de hallazgos por severidad e impacto CIA (Confidencialidad, Integridad, Disponibilidad).');
+      }
+
+      // ===== 3. NIVEL GLOBAL DE CUMPLIMIENTO =====
+      checkNewPage(60);
+      yPos += 4;
+      addSectionTitle('3. NIVEL GLOBAL DE CUMPLIMIENTO');
+
+      const scores = analysisData.compliance_scores || {};
+      const scoreEntries = Object.entries(scores);
+
+      if (scoreEntries.length > 0) {
+        const avgScore = Math.round(scoreEntries.reduce((sum, [, s]) => sum + s, 0) / scoreEntries.length);
+        let globalStatus = 'Crítico';
+        let statusColor = [220, 38, 38];
+        if (avgScore >= 85) { globalStatus = 'Excelente'; statusColor = [34, 197, 94]; }
+        else if (avgScore >= 75) { globalStatus = 'Bueno'; statusColor = [34, 197, 94]; }
+        else if (avgScore >= 60) { globalStatus = 'Aceptable'; statusColor = [234, 179, 8]; }
+        else if (avgScore >= 40) { globalStatus = 'Deficiente'; statusColor = [249, 115, 22]; }
+
+        addParagraph(`Nivel de cumplimiento global agregado: ${avgScore}% - Estado: ${globalStatus}`);
+        addParagraph(`Este porcentaje refleja el promedio ponderado de los ${scoreEntries.length} marco(s) normativo(s) evaluado(s). A continuación se presenta el desglose por framework.`);
+
+        yPos += 3;
+
+        const complianceTableData = scoreEntries.map(([framework, score]) => {
+          let status = 'Crítico';
+          let color = [220, 38, 38];
+          if (score >= 85) { status = 'Excelente'; color = [34, 197, 94]; }
+          else if (score >= 75) { status = 'Bueno'; color = [34, 197, 94]; }
+          else if (score >= 60) { status = 'Aceptable'; color = [234, 179, 8]; }
+          else if (score >= 40) { status = 'Deficiente'; color = [249, 115, 22]; }
+
+          return [
+            framework,
+            `${score}%`,
+            { content: status, styles: { textColor: color, fontStyle: 'bold' } }
+          ];
+        });
+
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Marco Normativo', 'Cumplimiento', 'Estado']],
+          body: complianceTableData,
+          headStyles: { fillColor: [10, 25, 47], textColor: [6, 182, 212], fontSize: 9, fontStyle: 'bold' },
+          bodyStyles: { fontSize: 9 },
+          alternateRowStyles: { fillColor: [245, 248, 252] },
+          margin: { left: margin, right: margin },
+          theme: 'grid',
+          styles: { cellPadding: 4, lineColor: [200, 210, 220], lineWidth: 0.3 }
+        });
+
+        yPos = doc.lastAutoTable.finalY + 10;
+      }
+
+      // ===== CHARTS PAGE =====
+      doc.addPage();
+      yPos = addPageHeader('ANÁLISIS VISUAL DE CUMPLIMIENTO');
+      yPos += 5;
+
       if (barChartRef.current) {
         try {
-          const barCanvas = await html2canvas(barChartRef.current, { scale: 2 });
+          const barCanvas = await html2canvas(barChartRef.current, { scale: 2, backgroundColor: '#ffffff' });
           const barImgData = barCanvas.toDataURL('image/png');
-          doc.addImage(barImgData, 'PNG', 15, yPos, 180, 80);
-          yPos += 90;
-        } catch (e) {
-          console.error("Error capturing bar chart:", e);
-        }
+          addSubTitle('Comparativa de Cumplimiento por Framework');
+          doc.addImage(barImgData, 'PNG', margin, yPos, contentWidth, 75);
+          yPos += 85;
+        } catch (e) { console.error("Error capturing bar chart:", e); }
       }
 
       if (radarChartRef.current) {
         try {
-          const radarCanvas = await html2canvas(radarChartRef.current, { scale: 2 });
+          checkNewPage(90);
+          const radarCanvas = await html2canvas(radarChartRef.current, { scale: 2, backgroundColor: '#ffffff' });
           const radarImgData = radarCanvas.toDataURL('image/png');
-          doc.addImage(radarImgData, 'PNG', 15, yPos, 180, 80);
-        } catch (e) {
-          console.error("Error capturing radar chart:", e);
+          addSubTitle('Análisis Multidimensional (Radar)');
+          doc.addImage(radarImgData, 'PNG', margin, yPos, contentWidth, 75);
+          yPos += 85;
+        } catch (e) { console.error("Error capturing radar chart:", e); }
+      }
+
+      // ===== 4. HALLAZGOS CLASIFICADOS =====
+      doc.addPage();
+      yPos = addPageHeader('HALLAZGOS DE AUDITORÍA');
+      addSectionTitle('4. HALLAZGOS CLASIFICADOS');
+
+      const gaps = analysisData.gaps || [];
+      const criticalGaps = gaps.filter(g => g.severity === 'high');
+      const majorGaps = gaps.filter(g => g.severity === 'medium');
+      const minorGaps = gaps.filter(g => g.severity === 'low');
+
+      if (criticalGaps.length > 0) {
+        addSubTitle(`4.1 Hallazgos Críticos (${criticalGaps.length})`);
+        criticalGaps.forEach((gap, i) => {
+          checkNewPage(25);
+          doc.setFillColor(254, 226, 226);
+          doc.roundedRect(margin, yPos - 3, contentWidth, 5, 0.5, 0.5, 'F');
+          doc.setTextColor(185, 28, 28);
+          doc.setFontSize(9.5);
+          doc.setFont(undefined, 'bold');
+          doc.text(`HC-${String(i + 1).padStart(3, '0')}: ${gap.framework || 'General'}`, margin + 2, yPos);
+          doc.setFont(undefined, 'normal');
+          doc.setTextColor(0, 0, 0);
+          yPos += 7;
+          addParagraph(gap.description || 'Hallazgo crítico identificado.', 4);
+          if (gap.recommendation) {
+            doc.setTextColor(10, 25, 47);
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(9);
+            checkNewPage(6);
+            doc.text('Recomendación:', margin + 4, yPos);
+            doc.setFont(undefined, 'normal');
+            doc.setTextColor(0, 0, 0);
+            yPos += 5;
+            addParagraph(gap.recommendation, 8);
+          }
+          yPos += 3;
+        });
+      }
+
+      if (majorGaps.length > 0) {
+        addSubTitle(`4.2 Hallazgos Mayores (${majorGaps.length})`);
+        majorGaps.forEach((gap, i) => {
+          checkNewPage(25);
+          doc.setFillColor(254, 249, 195);
+          doc.roundedRect(margin, yPos - 3, contentWidth, 5, 0.5, 0.5, 'F');
+          doc.setTextColor(146, 64, 14);
+          doc.setFontSize(9.5);
+          doc.setFont(undefined, 'bold');
+          doc.text(`HM-${String(i + 1).padStart(3, '0')}: ${gap.framework || 'General'}`, margin + 2, yPos);
+          doc.setFont(undefined, 'normal');
+          doc.setTextColor(0, 0, 0);
+          yPos += 7;
+          addParagraph(gap.description || 'Hallazgo mayor identificado.', 4);
+          yPos += 3;
+        });
+      }
+
+      if (minorGaps.length > 0) {
+        addSubTitle(`4.3 Hallazgos Menores (${minorGaps.length})`);
+        minorGaps.forEach((gap, i) => {
+          checkNewPage(20);
+          doc.setFillColor(220, 252, 231);
+          doc.roundedRect(margin, yPos - 3, contentWidth, 5, 0.5, 0.5, 'F');
+          doc.setTextColor(21, 128, 61);
+          doc.setFontSize(9.5);
+          doc.setFont(undefined, 'bold');
+          doc.text(`Hm-${String(i + 1).padStart(3, '0')}: ${gap.framework || 'General'}`, margin + 2, yPos);
+          doc.setFont(undefined, 'normal');
+          doc.setTextColor(0, 0, 0);
+          yPos += 7;
+          addParagraph(gap.description || 'Hallazgo menor identificado.', 4);
+          yPos += 2;
+        });
+      }
+
+      if (gaps.length === 0) {
+        addParagraph('No se identificaron hallazgos clasificables con la información proporcionada. Se recomienda realizar una auditoría presencial complementaria.');
+      }
+
+      // ===== 5. MATRIZ DE RIESGOS =====
+      doc.addPage();
+      yPos = addPageHeader('MATRIZ DE RIESGOS');
+      addSectionTitle('5. MATRIZ DE RIESGOS CONSOLIDADA');
+
+      if (gaps.length > 0) {
+        const riskTableData = gaps.map((gap, i) => {
+          const sevLabel = gap.severity === 'high' ? 'CRÍTICO' : gap.severity === 'medium' ? 'ALTO' : 'MEDIO';
+          const sevColor = gap.severity === 'high' ? [220, 38, 38] : gap.severity === 'medium' ? [234, 179, 8] : [34, 197, 94];
+          const desc = (gap.description || '').length > 60 ? gap.description.substring(0, 60) + '...' : (gap.description || 'N/A');
+          return [
+            `GAP-${String(i + 1).padStart(3, '0')}`,
+            gap.framework || 'General',
+            desc,
+            { content: sevLabel, styles: { textColor: sevColor, fontStyle: 'bold', halign: 'center' } },
+            gap.severity === 'high' ? '0-30 días' : gap.severity === 'medium' ? '30-90 días' : '90+ días'
+          ];
+        });
+
+        autoTable(doc, {
+          startY: yPos,
+          head: [['GAP ID', 'Framework', 'Descripción', 'Riesgo', 'Plazo']],
+          body: riskTableData,
+          headStyles: { fillColor: [10, 25, 47], textColor: [6, 182, 212], fontSize: 8, fontStyle: 'bold' },
+          bodyStyles: { fontSize: 8 },
+          columnStyles: {
+            0: { cellWidth: 22 },
+            1: { cellWidth: 30 },
+            2: { cellWidth: 70 },
+            3: { cellWidth: 22, halign: 'center' },
+            4: { cellWidth: 24, halign: 'center' }
+          },
+          alternateRowStyles: { fillColor: [245, 248, 252] },
+          margin: { left: margin, right: margin },
+          theme: 'grid',
+          styles: { cellPadding: 3, lineColor: [200, 210, 220], lineWidth: 0.3 }
+        });
+        yPos = doc.lastAutoTable.finalY + 10;
+      } else {
+        addParagraph('No se generaron entradas en la matriz de riesgos. Es necesario realizar un análisis más profundo con documentación adicional.');
+      }
+
+      // ===== 6. ANÁLISIS DETALLADO COMPLETO =====
+      doc.addPage();
+      yPos = addPageHeader('ANÁLISIS DETALLADO');
+      addSectionTitle('6. ANÁLISIS DETALLADO COMPLETO');
+
+      const sections = analysisText.split(/\n/);
+      sections.forEach((line) => {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.match(/^[=═─]+$/)) return;
+
+        if (trimmed.match(/^\d+\.\s+[A-ZÁÉÍÓÚÑ]/)) {
+          yPos += 3;
+          addSubTitle(trimmed);
+        } else if (trimmed.match(/^[A-Z][^:]+:$/) && trimmed.length < 80) {
+          addSubTitle(trimmed);
+        } else if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+          addListItem(trimmed.replace(/^[-•]\s*/, ''));
+        } else if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+          // skip table rows in text, they are handled separately
+        } else {
+          addParagraph(trimmed);
+        }
+      });
+
+      // ===== 7. RECOMENDACIONES =====
+      doc.addPage();
+      yPos = addPageHeader('RECOMENDACIONES');
+      addSectionTitle('7. RECOMENDACIONES PRIORIZADAS');
+
+      const recsContent = parseSectionContent('(?:6|7)\\.\\s*(?:RECOMENDACIONES|PLAN)', '(?:7|8|9|10)\\.\\s*');
+      if (recsContent) {
+        recsContent.split('\n').forEach(line => {
+          const t = line.trim();
+          if (!t || t.match(/^[=═─]+$/)) return;
+          if (t.startsWith('- ')) addListItem(t.substring(2));
+          else if (t.endsWith(':') && t.length < 80) addSubTitle(t);
+          else if (t.match(/^R-\d+/)) {
+            yPos += 2;
+            addSubTitle(t);
+          }
+          else addParagraph(t);
+        });
+      } else {
+        addParagraph('Las recomendaciones específicas se encuentran integradas en el análisis detallado de cada hallazgo en la sección anterior.');
+        if (criticalGaps.length > 0) {
+          addSubTitle('Acciones Inmediatas Sugeridas (P1 - 0 a 30 días):');
+          criticalGaps.forEach(gap => {
+            addListItem(`${gap.framework}: ${gap.description || 'Remediar hallazgo crítico'}`);
+          });
+        }
+        if (majorGaps.length > 0) {
+          addSubTitle('Acciones a Corto Plazo (P2 - 30 a 90 días):');
+          majorGaps.forEach(gap => {
+            addListItem(`${gap.framework}: ${gap.description || 'Remediar hallazgo mayor'}`);
+          });
         }
       }
 
-      // ===== PÁGINA 4: GAPS IDENTIFICADOS =====
-      if (analysisData.gaps && analysisData.gaps.length > 0) {
-        doc.addPage();
-        
-        doc.setFillColor(59, 130, 246);
-        doc.rect(0, 0, 210, 15, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(18);
-        doc.text("GAPS IDENTIFICADOS", 105, 10, { align: 'center' });
-        
-        const gapsData = analysisData.gaps.map(gap => {
-          const severityText = gap.severity === "high" ? "Alta" : gap.severity === "medium" ? "Media" : "Baja";
-          const severityColor = gap.severity === "high" ? [220, 38, 38] : gap.severity === "medium" ? [234, 179, 8] : [34, 197, 94];
-          
-          return [
-            gap.framework,
-            { content: gap.description, styles: { cellWidth: 90 } },
-            { content: severityText, styles: { textColor: severityColor, fontStyle: 'bold', halign: 'center' } }
-          ];
+      // ===== 8. CONCLUSIÓN EJECUTIVA =====
+      checkNewPage(50);
+      yPos += 6;
+      addSectionTitle('8. CONCLUSIÓN EJECUTIVA');
+
+      const conclusionContent = parseSectionContent('(?:8|9|10)\\.\\s*(?:CONCLUSI)', '(?:9|10|NOTA)\\.?\\s*');
+      if (conclusionContent) {
+        conclusionContent.split('\n').forEach(line => {
+          const t = line.trim();
+          if (t && !t.match(/^[=═─]+$/)) {
+            if (t.startsWith('- ')) addListItem(t.substring(2));
+            else addParagraph(t);
+          }
         });
-        
-        autoTable(doc, {
-          startY: 25,
-          head: [['Framework', 'Descripción del Gap', 'Severidad']],
-          body: gapsData,
-          headStyles: { fillColor: [59, 130, 246], textColor: [255, 255, 255] },
-          alternateRowStyles: { fillColor: [248, 250, 252] },
-          margin: { left: 15, right: 15 },
-          styles: { fontSize: 9, cellPadding: 5 }
-        });
+      } else {
+        const avgScore = scoreEntries.length > 0
+          ? Math.round(scoreEntries.reduce((sum, [, s]) => sum + s, 0) / scoreEntries.length)
+          : 0;
+        addParagraph(`La evaluación de cumplimiento normativo arroja un nivel global del ${avgScore}%, con ${criticalGaps.length} hallazgo(s) crítico(s), ${majorGaps.length} mayor(es) y ${minorGaps.length} menor(es). Se requiere atención prioritaria a los hallazgos críticos dentro de los próximos 30 días para mitigar riesgos operacionales y de cumplimiento.`);
+        addParagraph('Se recomienda validar estos resultados con una auditoría presencial realizada por un profesional certificado (CISA, CISSP, ISO 27001 Lead Auditor) antes de cualquier toma de decisión crítica.');
       }
 
-      // ===== PÁGINAS SIGUIENTES: ANÁLISIS DETALLADO =====
-      doc.addPage();
-      
-      doc.setFillColor(59, 130, 246);
-      doc.rect(0, 0, 210, 15, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(18);
-      doc.text("ANÁLISIS DETALLADO", 105, 10, { align: 'center' });
-      
-      doc.setTextColor(0, 0, 0);
-      doc.setFontSize(10);
-      yPos = 25;
-      
-      // Split analysis into sections
-      const sections = analysisText.split(/(?=\d+\.\s+[A-ZÁÉÍÓÚÑ])/);
-      
-      sections.forEach((section, idx) => {
-        if (!section.trim()) return;
-        
-        const lines = section.split('\n');
-        
-        lines.forEach((line) => {
-          if (!line.trim()) {
-            yPos += 3;
-            return;
-          }
-          
-          // Check if we need a new page
-          if (yPos > 270) {
-            doc.addPage();
-            yPos = 20;
-          }
-          
-          // Section headers
-          if (line.match(/^\d+\.\s+[A-ZÁÉÍÓÚÑ]/)) {
-            doc.setFontSize(13);
-            doc.setTextColor(59, 130, 246);
-            doc.text(line.trim(), 20, yPos);
-            doc.setTextColor(0, 0, 0);
-            doc.setFontSize(10);
-            yPos += 8;
-          }
-          // Subsection headers
-          else if (line.trim().match(/^[A-Z][^:]+:$/)) {
-            doc.setFontSize(11);
-            doc.setFont(undefined, 'bold');
-            doc.text(line.trim(), 20, yPos);
-            doc.setFont(undefined, 'normal');
-            doc.setFontSize(10);
-            yPos += 6;
-          }
-          // List items
-          else if (line.trim().startsWith('-')) {
-            const splitLine = doc.splitTextToSize(line.trim(), 165);
-            doc.text(splitLine, 25, yPos);
-            yPos += splitLine.length * 5;
-          }
-          // Regular text
-          else {
-            const splitLine = doc.splitTextToSize(line.trim(), 170);
-            doc.text(splitLine, 20, yPos);
-            yPos += splitLine.length * 5;
-          }
-        });
+      // ===== 9. NOTA LEGAL =====
+      checkNewPage(30);
+      yPos += 6;
+      addSectionTitle('9. NOTA LEGAL');
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      const legalText = 'Este informe ha sido generado mediante análisis de inteligencia artificial por la plataforma SmartSecAssess y constituye una evaluación orientativa. Debe ser revisado y validado por un auditor certificado (CISA, CISSP, ISO 27001 Lead Auditor) antes de su uso oficial o toma de decisiones críticas. No constituye una certificación de cumplimiento ni asesoramiento legal vinculante. La información contenida es confidencial y de uso exclusivo del destinatario autorizado.';
+      const legalLines = doc.splitTextToSize(legalText, contentWidth);
+      legalLines.forEach(line => {
+        checkNewPage(5);
+        doc.text(line, margin, yPos);
+        yPos += 4;
       });
 
-      // ===== ÚLTIMA PÁGINA: PIE DE PÁGINA =====
+      // ===== PIE DE PÁGINA EN TODAS LAS PÁGINAS =====
       const pageCount = doc.internal.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(128, 128, 128);
-        doc.text(`Página ${i} de ${pageCount}`, 105, 290, { align: 'center' });
-        doc.text('SmartSecAssess - Reporte Confidencial', 20, 290);
+        doc.setFillColor(10, 25, 47);
+        doc.rect(0, pageHeight - 12, pageWidth, 12, 'F');
+        doc.setFontSize(7);
+        doc.setTextColor(6, 182, 212);
+        doc.text(`SmartSecAssess | Informe Confidencial | Ref: SSA-${sessionId.substring(0, 8).toUpperCase()}`, margin, pageHeight - 5);
+        doc.setTextColor(180, 200, 220);
+        doc.text(`Página ${i} de ${pageCount}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
       }
 
-      doc.save(`SmartSecAssess-Reporte-${new Date().toISOString().split('T')[0]}.pdf`);
-      toast.success("Reporte completo generado exitosamente");
+      doc.save(`SmartSecAssess-Auditoria-${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success("Informe de auditoría generado exitosamente");
     } catch (error) {
       console.error("Error generating PDF:", error);
-      toast.error("Error al generar el reporte");
+      toast.error("Error al generar el informe");
     } finally {
       setExporting(false);
     }
