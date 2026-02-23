@@ -263,6 +263,50 @@ export default function ChatInterface() {
     }
   };
 
+  const deleteSession = async (sessionIdToDelete) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar esta sesión?')) {
+      return;
+    }
+    
+    try {
+      await secureAxios.delete(`/sessions/${sessionIdToDelete}`);
+      
+      // Si era la sesión activa, limpiar estado
+      if (sessionId === sessionIdToDelete) {
+        setSessionId(null);
+        setMessages([]);
+        setUploadedFiles([]);
+      }
+      
+      // Recargar sesiones
+      await loadSessions();
+      toast.success('Sesión eliminada correctamente');
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      toast.error('Error al eliminar la sesión');
+    }
+  };
+
+  const renameSession = async (sessionIdToRename, newTitle) => {
+    if (!newTitle || newTitle.trim() === '') {
+      toast.error('El nombre no puede estar vacío');
+      return;
+    }
+    
+    try {
+      await secureAxios.patch(`/sessions/${sessionIdToRename}`, {
+        title: newTitle.trim()
+      });
+      
+      // Recargar sesiones
+      await loadSessions();
+      toast.success('Sesión renombrada correctamente');
+    } catch (error) {
+      console.error('Error renaming session:', error);
+      toast.error('Error al renombrar la sesión');
+    }
+  };
+
   const loadSession = async (sid) => {
     try {
       setSessionId(sid);
