@@ -1146,6 +1146,90 @@ async def fill_template_endpoint(request: Request, template_id: str, variables: 
         )
 
 
+@api_router.post("/reports/generate")
+@limiter.limit("5/minute")
+async def generate_report(
+    request: Request,
+    data: Dict,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Generate professional DOCX audit report.
+    Accepts client_info and session_id, returns downloadable DOCX.
+    """
+    try:
+        session_id = data.get('session_id')
+        if not session_id or not validate_session_id(session_id):
+            raise HTTPException(status_code=400, detail="Invalid session ID")
+
+        client_info = data.get('client_info', {})
+        output_format = data.get('format', 'docx')
+
+        # Verify session belongs to user
+        session = await db.sessions.find_one({
+            "id": session_id,
+            "user_id": current_user.id
+        })
+        if not session:
+            raise HTTPException(status_code=403, detail="Session not found or access denied")
+
+        # Get analysis data (latest)
+        analysis = await db.analysis_results.find_one(
+            {"session_id": session_id, "user_id": current_user.id},
+            {"_id": 0},
+            sort=[("timestamp", -1)]
+        )
+        if not analysis:
+            raise HTTPException(status_code=404, detail="No analysis found for this session")
+
+        # Handle logo upload (base64 or file path)
+        logo_path = None
+        logo_data = data.get('logo_base64')
+        if logo_data:
+            try:
+                import base64
+                # Remove data URL prefix if present
+                if ',' in logo_data:
+                    logo_data = logo_data.split(',')[1]
+                logo_bytes = base64.b64decode(logo_data)
+                logo_path = Path(UPLOAD_DIR) / f"logo_{current_user.id}.png"
+                with open(logo_path, 'wb') as f:
+                    f.write(logo_bytes)
+            except Exception as e:
+                logger.warning(f"Could not process logo: {e}")
+
+        # Generate DOCX
+        file_stream = generate_report_docx(
+            analysis_data=analysis,
+            client_info=client_info,
+            logo_path=str(logo_path) if logo_path else None
+        )
+
+        client_name = client_info.get('client_name', 'Cliente')
+        safe_name = re.sub(r'[^\w\s-]', '', client_name).strip().replace(' ', '_')[:30]
+        date_str = datetime.now().strftime('%Y-%m-%d')
+        filename = f"Informe_Auditoria_{safe_name}_{date_str}.docx"
+
+        log_security_event("REPORT_GENERATED", {
+            "session_id": session_id,
+            "user_id": current_user.id,
+            "format": output_format,
+            "client_name": client_name
+        })
+
+        return StreamingResponse(
+            file_stream,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating report: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error al generar informe: {str(e)}")
+
+
 @api_router.post("/export/word")
 @limiter.limit("5/minute")
 async def export_to_word(request: Request, data: Dict):
