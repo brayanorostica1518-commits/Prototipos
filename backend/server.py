@@ -185,18 +185,27 @@ class AnalysisResult(BaseModel):
 
 
 class Session(BaseModel):
-    """Session model"""
+    """Session model with data retention policy"""
     model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str  # Owner of the session
     title: str = Field(max_length=200)
+    retention_policy: str = Field(default="72h")  # "none", "72h", "permanent"
+    expires_at: Optional[datetime] = None  # Auto-calculated based on retention_policy
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     
     @validator('title')
     def sanitize_title(cls, v):
         return sanitize_text(v, max_length=200)
+    
+    @validator('retention_policy')
+    def validate_retention(cls, v):
+        allowed = ["none", "72h", "permanent"]
+        if v not in allowed:
+            raise ValueError(f"retention_policy must be one of {allowed}")
+        return v
 
 
 # ==================== MIDDLEWARE ====================
