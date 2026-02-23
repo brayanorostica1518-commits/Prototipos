@@ -698,13 +698,13 @@ async def upload_files(request: Request, files: List[UploadFile] = File(...)):
 async def analyze_assessment(
     request: Request,
     data: AnalysisRequest,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user)
 ):
     """
-    3-Stage Analysis Pipeline:
-    Stage 1: Classification of findings
-    Stage 2: Technical expansion per finding
-    Stage 3: Consolidated executive report
+    3-Stage Analysis Pipeline (Background Task):
+    Returns immediately with task_id, runs pipeline in background.
+    Frontend polls /api/analyze/status/{task_id} for progress.
     """
     try:
         session_id = data.session_id
@@ -760,20 +760,74 @@ async def analyze_assessment(
         if extracted_texts:
             user_text += "\n\n" + "\n".join(extracted_texts)
 
-        # Run 3-stage analysis pipeline
+        # Save user message immediately
+        user_msg = ChatMessage(
+            session_id=session_id,
+            role="user",
+            content=message_content,
+            file_names=file_names if file_names else None
+        )
+        user_doc = user_msg.model_dump()
+        user_doc['timestamp'] = user_doc['timestamp'].isoformat()
+        await db.messages.insert_one(user_doc)
+
+        # Create task tracker
+        task_id = str(uuid.uuid4())
+        await db.analysis_tasks.insert_one({
+            "task_id": task_id,
+            "session_id": session_id,
+            "user_id": current_user.id,
+            "status": "processing",
+            "stage": "stage1",
+            "stage_label": "Clasificando hallazgos...",
+            "progress": 10,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "error": None
+        })
+
+        # Launch pipeline in background
+        background_tasks.add_task(
+            _run_pipeline_background,
+            task_id, session_id, current_user.id,
+            user_text, frameworks, file_contents,
+            file_names
+        )
+
+        return {
+            "task_id": task_id,
+            "status": "processing",
+            "user_message": user_msg.model_dump()
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting analysis: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error al iniciar análisis: {str(e)}")
+
+
+async def _run_pipeline_background(task_id, session_id, user_id, user_text, frameworks, file_contents, file_names):
+    """Background task that runs the 3-stage pipeline and saves results."""
+    try:
+        # Update: Stage 1
+        await db.analysis_tasks.update_one(
+            {"task_id": task_id},
+            {"$set": {"stage": "stage1", "stage_label": "Etapa 1: Clasificando hallazgos...", "progress": 15}}
+        )
+
         pipeline_result = await run_analysis_pipeline(
             api_key=os.environ['EMERGENT_LLM_KEY'],
             session_id=session_id,
             user_text=user_text,
             frameworks=frameworks,
-            file_contents=file_contents if file_contents else None
+            file_contents=file_contents
         )
 
         compliance_scores = pipeline_result['compliance_scores']
         expanded_findings = pipeline_result['expanded_findings']
         executive_report = pipeline_result['executive_report']
 
-        # Convert expanded findings to serializable gaps (backward compat)
+        # Convert to gaps (backward compat)
         gaps = []
         for f in expanded_findings:
             sev_map = {'critical': 'high', 'major': 'medium', 'minor': 'low'}
@@ -787,18 +841,7 @@ async def analyze_assessment(
                 "suggested_timeline": f.get('suggested_timeline', ''),
             })
 
-        # Save user message
-        user_msg = ChatMessage(
-            session_id=session_id,
-            role="user",
-            content=message_content,
-            file_names=file_names if file_names else None
-        )
-        user_doc = user_msg.model_dump()
-        user_doc['timestamp'] = user_doc['timestamp'].isoformat()
-        await db.messages.insert_one(user_doc)
-
-        # Save AI response (Stage 3 executive report)
+        # Save AI response message
         ai_msg = ChatMessage(
             session_id=session_id,
             role="assistant",
@@ -808,10 +851,10 @@ async def analyze_assessment(
         ai_doc['timestamp'] = ai_doc['timestamp'].isoformat()
         await db.messages.insert_one(ai_doc)
 
-        # Save analysis result with expanded findings
+        # Save analysis result
         analysis = AnalysisResult(
             session_id=session_id,
-            user_id=current_user.id,
+            user_id=user_id,
             frameworks=frameworks,
             analysis=executive_report,
             compliance_scores=compliance_scores,
@@ -824,10 +867,26 @@ async def analyze_assessment(
         analysis_doc['stage1_analysis'] = pipeline_result['stage1_analysis']
         await db.analysis_results.insert_one(analysis_doc)
 
-        # Update session timestamp
+        # Update session
         await db.sessions.update_one(
             {"id": session_id},
             {"$set": {"updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+
+        # Mark task complete
+        await db.analysis_tasks.update_one(
+            {"task_id": task_id},
+            {"$set": {
+                "status": "completed",
+                "stage": "done",
+                "stage_label": "Análisis completado",
+                "progress": 100,
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+                "compliance_scores": compliance_scores,
+                "gaps": gaps,
+                "expanded_findings": expanded_findings,
+                "pipeline_metadata": pipeline_result['pipeline_metadata']
+            }}
         )
 
         log_security_event("ANALYSIS_COMPLETED", {
@@ -837,20 +896,35 @@ async def analyze_assessment(
             "pipeline": pipeline_result['pipeline_metadata']
         })
 
-        return {
-            "user_message": user_msg.model_dump(),
-            "ai_response": ai_msg.model_dump(),
-            "compliance_scores": compliance_scores,
-            "gaps": gaps,
-            "expanded_findings": expanded_findings,
-            "pipeline_metadata": pipeline_result['pipeline_metadata']
-        }
-
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.error(f"Error in analysis pipeline: {type(e).__name__}: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error al analizar: {str(e)}")
+        logger.error(f"Pipeline background error: {type(e).__name__}: {str(e)}", exc_info=True)
+        await db.analysis_tasks.update_one(
+            {"task_id": task_id},
+            {"$set": {
+                "status": "error",
+                "stage": "error",
+                "stage_label": f"Error: {str(e)[:200]}",
+                "progress": 0,
+                "error": str(e)[:500]
+            }}
+        )
+
+
+@api_router.get("/analyze/status/{task_id}")
+@limiter.limit("60/minute")
+async def get_analysis_status(
+    request: Request,
+    task_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Poll analysis task status."""
+    task = await db.analysis_tasks.find_one(
+        {"task_id": task_id, "user_id": current_user.id},
+        {"_id": 0}
+    )
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
 
 
 @api_router.get("/sessions/{session_id}/messages", response_model=List[ChatMessage])
