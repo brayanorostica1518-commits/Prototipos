@@ -7,7 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { 
   FileText, Send, Upload, Sparkles, BarChart3, Loader2, 
-  Menu, X, Plus, MessageSquare, FileCode, Shield, Terminal, Zap
+  Menu, X, Plus, MessageSquare, FileCode, Shield, Terminal, Zap,
+  Pencil, Trash2
 } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import secureAxios, { uploadFiles } from "@/utils/api";
