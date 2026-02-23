@@ -1,5 +1,41 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Orbitron:wght@400;500;700;900&family=Inter:wght@400;500;600&display=swap');
 
+/* ══════════════════════════════════════════════════════════════
+   SMARTSECASSESS - PROFESSIONAL COLOR PALETTE
+   ══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Primary Background Colors */
+  --bg-primary: #0F172A;
+  --bg-secondary: #1E293B;
+  --bg-tertiary: #334155;
+  
+  /* Text Colors */
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-tertiary: #94A3B8;
+  
+  /* Accent Colors */
+  --accent-primary: #0EA5E9;
+  --accent-hover: #0284C7;
+  --accent-light: #38BDF8;
+  
+  /* Status Colors */
+  --status-critical: #DC2626;
+  --status-high: #F97316;
+  --status-medium: #EAB308;
+  --status-low: #22C55E;
+  
+  /* Chat Colors */
+  --chat-bg: #1E293B;
+  --user-bubble: #0EA5E9;
+  --ai-bubble: #334155;
+  
+  /* UI Elements */
+  --border-color: rgba(14, 165, 233, 0.2);
+  --shadow-color: rgba(14, 165, 233, 0.3);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -8,8 +44,8 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background: #000000;
-  color: #f3f4f6;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   line-height: 1.6;
   overflow-x: hidden;
 }
