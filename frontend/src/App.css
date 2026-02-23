@@ -53,19 +53,19 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Orbitron', 'Space Mono', monospace;
   font-weight: 700;
-  color: #e5e7eb;
+  color: var(--text-primary);
 }
 
 .App {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0a0e27 0%, #000000 50%, #0d1117 100%);
+  background: linear-gradient(135deg, var(--bg-primary) 0%, #000000 50%, var(--bg-secondary) 100%);
 }
 
 /* Cyber Grid Background */
 .cyber-grid {
   background-image: 
-    linear-gradient(rgba(34, 211, 238, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.08) 1px, transparent 1px);
+    linear-gradient(var(--border-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
   background-size: 50px 50px;
   position: relative;
 }
@@ -77,7 +77,7 @@ h1, h2, h3, h4, h5, h6 {
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle at 50% 50%, var(--shadow-color) 0%, transparent 70%);
   pointer-events: none;
 }
 
