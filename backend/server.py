@@ -11,7 +11,7 @@ Security Features Implemented:
 - CORS protection
 """
 
-from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Request, status, Depends
+from fastapi import FastAPI, APIRouter, UploadFile, File, HTTPException, Request, status, Depends, BackgroundTasks
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from dotenv import load_dotenv
