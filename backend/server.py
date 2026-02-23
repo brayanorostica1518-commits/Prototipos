@@ -469,6 +469,132 @@ async def get_sessions(
         )
 
 
+@api_router.delete("/sessions/{session_id}")
+@limiter.limit("10/minute")
+async def delete_session(
+    session_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Delete a session and all associated data (messages, analysis, files)
+    Only the owner can delete their session
+    """
+    try:
+        # Verify session belongs to user
+        session = await db.sessions.find_one({
+            "id": session_id,
+            "user_id": current_user.id
+        }, {"_id": 0})
+        
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found or access denied")
+        
+        # Delete associated analysis results
+        deleted_analysis = await db.analysis_results.delete_many({"session_id": session_id})
+        
+        # Delete associated files metadata
+        deleted_files = await db.uploaded_files.delete_many({"session_id": session_id})
+        
+        # Delete the session itself
+        result = await db.sessions.delete_one({"id": session_id, "user_id": current_user.id})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        log_security_event("SESSION_DELETED", {
+            "session_id": session_id,
+            "user_id": current_user.id,
+            "analysis_deleted": deleted_analysis.deleted_count,
+            "files_deleted": deleted_files.deleted_count
+        })
+        
+        return {"message": "Session deleted successfully", "session_id": session_id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting session: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=get_safe_error_message(e, DEBUG_MODE)
+        )
+
+
+@api_router.patch("/sessions/{session_id}")
+@limiter.limit("10/minute")
+async def update_session(
+    session_id: str,
+    request: Request,
+    title: str = None,
+    retention_policy: str = None,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Update session properties (title, retention_policy)
+    Only the owner can update their session
+    """
+    try:
+        # Verify session belongs to user
+        session = await db.sessions.find_one({
+            "id": session_id,
+            "user_id": current_user.id
+        }, {"_id": 0})
+        
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found or access denied")
+        
+        # Build update document
+        update_doc = {"updated_at": datetime.now(timezone.utc).isoformat()}
+        
+        if title is not None and title.strip():
+            update_doc["title"] = sanitize_text(title.strip(), max_length=200)
+        
+        if retention_policy is not None:
+            if retention_policy not in ["none", "72h", "permanent"]:
+                raise HTTPException(status_code=400, detail="Invalid retention_policy")
+            
+            update_doc["retention_policy"] = retention_policy
+            
+            # Recalculate expires_at
+            created_at = session.get('created_at')
+            if isinstance(created_at, str):
+                created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+            
+            if retention_policy == "none":
+                update_doc["expires_at"] = (created_at + timedelta(hours=1)).isoformat()
+            elif retention_policy == "72h":
+                update_doc["expires_at"] = (created_at + timedelta(hours=72)).isoformat()
+            else:  # permanent
+                update_doc["expires_at"] = None
+        
+        # Update session
+        result = await db.sessions.update_one(
+            {"id": session_id, "user_id": current_user.id},
+            {"$set": update_doc}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        log_security_event("SESSION_UPDATED", {
+            "session_id": session_id,
+            "user_id": current_user.id,
+            "updates": list(update_doc.keys())
+        })
+        
+        return {"message": "Session updated successfully", "session_id": session_id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating session: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=get_safe_error_message(e, DEBUG_MODE)
+        )
+
+
 @api_router.post("/upload")
 @limiter.limit("5/minute")  # Strict limit on file uploads
 async def upload_files(request: Request, files: List[UploadFile] = File(...)):
