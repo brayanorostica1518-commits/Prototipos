@@ -213,8 +213,9 @@ export default function ChatInterface() {
   useEffect(() => {
     const initializeApp = async () => {
       await loadSessions();
-      // Solo crear sesión si no hay ninguna activa
-      if (!sessionId) {
+      // Solo crear sesión si no hay ninguna
+      const existingSessions = await loadSessions();
+      if (!sessionId && (!existingSessions || existingSessions.length === 0)) {
         await createSession();
       }
     };
