@@ -831,6 +831,21 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Pipeline Metadata Banner */}
+        {analysisData.pipeline_metadata && (
+          <div className="glass-card p-3 rounded-xl border border-cyan-500/20 mb-6 animate-fade-in" data-testid="pipeline-metadata">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                <span className="text-xs text-gray-400">Pipeline 3 etapas completado en <span className="text-cyan-400 font-semibold">{analysisData.pipeline_metadata.total_seconds}s</span></span>
+              </div>
+              <div className="flex gap-4 text-xs text-gray-500">
+                <span>Hallazgos: <span className="text-red-400 font-bold">{analysisData.pipeline_metadata.critical || 0}</span> críticos, <span className="text-amber-400 font-bold">{analysisData.pipeline_metadata.major || 0}</span> mayores, <span className="text-green-400 font-bold">{analysisData.pipeline_metadata.minor || 0}</span> menores</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Compliance Scores */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           {Object.entries(analysisData.compliance_scores || {}).map(([framework, score]) => (
