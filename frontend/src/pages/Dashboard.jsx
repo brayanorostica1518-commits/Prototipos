@@ -367,83 +367,190 @@ export default function Dashboard() {
         } catch (e) { console.error("Error capturing radar chart:", e); }
       }
 
-      // ===== 4. HALLAZGOS CLASIFICADOS =====
+      // ===== 4. HALLAZGOS CLASIFICADOS (from expanded_findings) =====
       doc.addPage();
       yPos = addPageHeader('HALLAZGOS DE AUDITORÍA');
       addSectionTitle('4. HALLAZGOS CLASIFICADOS');
 
+      const expFindings = analysisData.expanded_findings || [];
+      const critFindings = expFindings.filter(f => f.severity === 'critical');
+      const majFindings = expFindings.filter(f => f.severity === 'major');
+      const minFindings = expFindings.filter(f => f.severity === 'minor');
+
+      // Fallback to gaps if no expanded findings
       const gaps = analysisData.gaps || [];
-      const criticalGaps = gaps.filter(g => g.severity === 'high');
-      const majorGaps = gaps.filter(g => g.severity === 'medium');
-      const minorGaps = gaps.filter(g => g.severity === 'low');
+      const hasExpanded = expFindings.length > 0;
 
-      if (criticalGaps.length > 0) {
-        addSubTitle(`4.1 Hallazgos Críticos (${criticalGaps.length})`);
-        criticalGaps.forEach((gap, i) => {
-          checkNewPage(25);
-          doc.setFillColor(254, 226, 226);
-          doc.roundedRect(margin, yPos - 3, contentWidth, 5, 0.5, 0.5, 'F');
-          doc.setTextColor(185, 28, 28);
-          doc.setFontSize(9.5);
+      const renderExpandedFinding = (finding, prefix, i) => {
+        checkNewPage(60);
+        // Header bar
+        const sevColors = { critical: [185,28,28], major: [146,64,14], minor: [21,128,61] };
+        const bgColors = { critical: [254,226,226], major: [254,249,195], minor: [220,252,231] };
+        const sevLabels = { critical: 'CRÍTICO', major: 'MAYOR', minor: 'MENOR' };
+
+        doc.setFillColor(...(bgColors[finding.severity] || bgColors.major));
+        doc.roundedRect(margin, yPos - 3, contentWidth, 6, 0.5, 0.5, 'F');
+        doc.setTextColor(...(sevColors[finding.severity] || sevColors.major));
+        doc.setFontSize(9.5);
+        doc.setFont(undefined, 'bold');
+        doc.text(`${prefix}-${String(i + 1).padStart(3, '0')}: ${finding.framework || ''} - ${finding.control || ''} ${finding.control_name || ''}`, margin + 2, yPos + 1);
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(0, 0, 0);
+        yPos += 9;
+
+        // Normative Context
+        if (finding.normative_context) {
           doc.setFont(undefined, 'bold');
-          doc.text(`HC-${String(i + 1).padStart(3, '0')}: ${gap.framework || 'General'}`, margin + 2, yPos);
+          doc.setFontSize(8.5);
+          doc.setTextColor(10, 25, 47);
+          checkNewPage(6);
+          doc.text('Contexto Normativo:', margin + 2, yPos);
           doc.setFont(undefined, 'normal');
           doc.setTextColor(0, 0, 0);
-          yPos += 7;
-          addParagraph(gap.description || 'Hallazgo crítico identificado.', 4);
-          if (gap.recommendation) {
-            doc.setTextColor(10, 25, 47);
-            doc.setFont(undefined, 'bold');
-            doc.setFontSize(9);
-            checkNewPage(6);
-            doc.text('Recomendación:', margin + 4, yPos);
-            doc.setFont(undefined, 'normal');
-            doc.setTextColor(0, 0, 0);
-            yPos += 5;
-            addParagraph(gap.recommendation, 8);
-          }
-          yPos += 3;
-        });
-      }
+          yPos += 5;
+          addParagraph(finding.normative_context, 4);
+        }
 
-      if (majorGaps.length > 0) {
-        addSubTitle(`4.2 Hallazgos Mayores (${majorGaps.length})`);
-        majorGaps.forEach((gap, i) => {
-          checkNewPage(25);
-          doc.setFillColor(254, 249, 195);
-          doc.roundedRect(margin, yPos - 3, contentWidth, 5, 0.5, 0.5, 'F');
-          doc.setTextColor(146, 64, 14);
-          doc.setFontSize(9.5);
+        // Non-conformity
+        if (finding.nonconformity_description) {
           doc.setFont(undefined, 'bold');
-          doc.text(`HM-${String(i + 1).padStart(3, '0')}: ${gap.framework || 'General'}`, margin + 2, yPos);
+          doc.setFontSize(8.5);
+          doc.setTextColor(10, 25, 47);
+          checkNewPage(6);
+          doc.text('No Conformidad:', margin + 2, yPos);
           doc.setFont(undefined, 'normal');
           doc.setTextColor(0, 0, 0);
-          yPos += 7;
-          addParagraph(gap.description || 'Hallazgo mayor identificado.', 4);
-          yPos += 3;
-        });
-      }
+          yPos += 5;
+          addParagraph(finding.nonconformity_description, 4);
+        }
 
-      if (minorGaps.length > 0) {
-        addSubTitle(`4.3 Hallazgos Menores (${minorGaps.length})`);
-        minorGaps.forEach((gap, i) => {
-          checkNewPage(20);
-          doc.setFillColor(220, 252, 231);
-          doc.roundedRect(margin, yPos - 3, contentWidth, 5, 0.5, 0.5, 'F');
-          doc.setTextColor(21, 128, 61);
-          doc.setFontSize(9.5);
+        // Technical Analysis
+        if (finding.technical_analysis) {
           doc.setFont(undefined, 'bold');
-          doc.text(`Hm-${String(i + 1).padStart(3, '0')}: ${gap.framework || 'General'}`, margin + 2, yPos);
+          doc.setFontSize(8.5);
+          doc.setTextColor(10, 25, 47);
+          checkNewPage(6);
+          doc.text('Análisis Técnico:', margin + 2, yPos);
           doc.setFont(undefined, 'normal');
           doc.setTextColor(0, 0, 0);
-          yPos += 7;
-          addParagraph(gap.description || 'Hallazgo menor identificado.', 4);
-          yPos += 2;
-        });
-      }
+          yPos += 5;
+          addParagraph(finding.technical_analysis, 4);
+        }
 
-      if (gaps.length === 0) {
-        addParagraph('No se identificaron hallazgos clasificables con la información proporcionada. Se recomienda realizar una auditoría presencial complementaria.');
+        // CIA Impact
+        const cia = finding.cia_impact || {};
+        if (cia.confidentiality || cia.integrity || cia.availability) {
+          doc.setFont(undefined, 'bold');
+          doc.setFontSize(8.5);
+          doc.setTextColor(10, 25, 47);
+          checkNewPage(6);
+          doc.text('Impacto CIA:', margin + 2, yPos);
+          doc.setFont(undefined, 'normal');
+          doc.setTextColor(0, 0, 0);
+          yPos += 5;
+          ['confidentiality', 'integrity', 'availability'].forEach(dim => {
+            const d = cia[dim];
+            if (d) {
+              const label = dim === 'confidentiality' ? 'Confidencialidad' : dim === 'integrity' ? 'Integridad' : 'Disponibilidad';
+              addListItem(`${label}: ${d.level} - ${d.justification}`, 6);
+            }
+          });
+        }
+
+        // Severity Justification
+        if (finding.severity_justification) {
+          doc.setFont(undefined, 'bold');
+          doc.setFontSize(8.5);
+          doc.setTextColor(10, 25, 47);
+          checkNewPage(6);
+          doc.text(`Justificación de Severidad (${sevLabels[finding.severity] || 'N/A'}):`, margin + 2, yPos);
+          doc.setFont(undefined, 'normal');
+          doc.setTextColor(0, 0, 0);
+          yPos += 5;
+          addParagraph(finding.severity_justification, 4);
+        }
+
+        // Risk Evaluation
+        const risk = finding.risk_evaluation || {};
+        if (risk.risk_level) {
+          doc.setFont(undefined, 'bold');
+          doc.setFontSize(8.5);
+          doc.setTextColor(10, 25, 47);
+          checkNewPage(6);
+          doc.text('Evaluación de Riesgo:', margin + 2, yPos);
+          doc.setFont(undefined, 'normal');
+          doc.setTextColor(0, 0, 0);
+          yPos += 5;
+          addParagraph(`${risk.risk_calculation || `Probabilidad: ${risk.probability} | Impacto: ${risk.impact} | Riesgo: ${risk.risk_level}`}`, 4);
+        }
+
+        // Recommendation
+        if (finding.recommendation) {
+          doc.setFont(undefined, 'bold');
+          doc.setFontSize(8.5);
+          doc.setTextColor(6, 120, 160);
+          checkNewPage(6);
+          doc.text('Recomendación:', margin + 2, yPos);
+          doc.setFont(undefined, 'normal');
+          doc.setTextColor(0, 0, 0);
+          yPos += 5;
+          addParagraph(finding.recommendation, 4);
+        }
+
+        // ISO 27002 Alignment
+        if (finding.iso27002_alignment) {
+          addParagraph(`Alineación ISO 27002: ${finding.iso27002_alignment}`, 4);
+        }
+
+        // Timeline + Maturity
+        const extras = [];
+        if (finding.suggested_timeline) extras.push(`Plazo: ${finding.suggested_timeline}`);
+        if (finding.maturity_level !== undefined) extras.push(`Madurez: Nivel ${finding.maturity_level}/5`);
+        if (extras.length) addParagraph(extras.join(' | '), 4);
+
+        yPos += 4;
+      };
+
+      if (hasExpanded) {
+        if (critFindings.length > 0) {
+          addSubTitle(`4.1 Hallazgos Críticos (${critFindings.length})`);
+          critFindings.forEach((f, i) => renderExpandedFinding(f, 'HC', i));
+        }
+        if (majFindings.length > 0) {
+          addSubTitle(`4.2 Hallazgos Mayores (${majFindings.length})`);
+          majFindings.forEach((f, i) => renderExpandedFinding(f, 'HM', i));
+        }
+        if (minFindings.length > 0) {
+          addSubTitle(`4.3 Hallazgos Menores (${minFindings.length})`);
+          minFindings.forEach((f, i) => renderExpandedFinding(f, 'Hm', i));
+        }
+        if (expFindings.length === 0) {
+          addParagraph('No se identificaron hallazgos con la información proporcionada.');
+        }
+      } else {
+        // Fallback for old analyses without expanded_findings
+        const criticalGaps = gaps.filter(g => g.severity === 'high');
+        const majorGaps = gaps.filter(g => g.severity === 'medium');
+        const minorGaps = gaps.filter(g => g.severity === 'low');
+        if (criticalGaps.length > 0) {
+          addSubTitle(`4.1 Hallazgos Críticos (${criticalGaps.length})`);
+          criticalGaps.forEach((gap, i) => {
+            checkNewPage(20);
+            addParagraph(`HC-${String(i+1).padStart(3,'0')}: ${gap.framework} - ${gap.description}`, 2);
+          });
+        }
+        if (majorGaps.length > 0) {
+          addSubTitle(`4.2 Hallazgos Mayores (${majorGaps.length})`);
+          majorGaps.forEach((gap, i) => {
+            addParagraph(`HM-${String(i+1).padStart(3,'0')}: ${gap.framework} - ${gap.description}`, 2);
+          });
+        }
+        if (minorGaps.length > 0) {
+          addSubTitle(`4.3 Hallazgos Menores (${minorGaps.length})`);
+          minorGaps.forEach((gap, i) => {
+            addParagraph(`Hm-${String(i+1).padStart(3,'0')}: ${gap.framework} - ${gap.description}`, 2);
+          });
+        }
       }
 
       // ===== 5. MATRIZ DE RIESGOS =====
@@ -451,41 +558,44 @@ export default function Dashboard() {
       yPos = addPageHeader('MATRIZ DE RIESGOS');
       addSectionTitle('5. MATRIZ DE RIESGOS CONSOLIDADA');
 
-      if (gaps.length > 0) {
-        const riskTableData = gaps.map((gap, i) => {
-          const sevLabel = gap.severity === 'high' ? 'CRÍTICO' : gap.severity === 'medium' ? 'ALTO' : 'MEDIO';
-          const sevColor = gap.severity === 'high' ? [220, 38, 38] : gap.severity === 'medium' ? [234, 179, 8] : [34, 197, 94];
-          const desc = (gap.description || '').length > 60 ? gap.description.substring(0, 60) + '...' : (gap.description || 'N/A');
+      const riskSource = hasExpanded ? expFindings : gaps;
+      if (riskSource.length > 0) {
+        const riskTableData = riskSource.map((item, i) => {
+          const isExp = !!item.risk_evaluation;
+          const riskLvl = isExp ? (item.risk_evaluation.risk_level || 'MEDIO') : (item.severity === 'high' ? 'CRÍTICO' : item.severity === 'medium' ? 'ALTO' : 'MEDIO');
+          const riskColor = riskLvl.includes('CRÍT') ? [220,38,38] : riskLvl.includes('ALTO') ? [234,179,8] : [34,197,94];
+          const cia = item.cia_impact || {};
+          const ciaStr = cia.confidentiality ? `C:${cia.confidentiality.level} I:${cia.integrity?.level || 'N/A'} D:${cia.availability?.level || 'N/A'}` : 'N/A';
+          const desc = (item.nonconformity_description || item.description || '');
+          const shortDesc = desc.length > 50 ? desc.substring(0, 50) + '...' : desc;
+          const timeline = item.suggested_timeline || (item.severity === 'high' || item.severity === 'critical' ? '0-30 días' : '30-90 días');
+
           return [
-            `GAP-${String(i + 1).padStart(3, '0')}`,
-            gap.framework || 'General',
-            desc,
-            { content: sevLabel, styles: { textColor: sevColor, fontStyle: 'bold', halign: 'center' } },
-            gap.severity === 'high' ? '0-30 días' : gap.severity === 'medium' ? '30-90 días' : '90+ días'
+            item.id || `GAP-${String(i + 1).padStart(3, '0')}`,
+            item.framework || 'General',
+            item.control || 'N/A',
+            shortDesc,
+            { content: riskLvl, styles: { textColor: riskColor, fontStyle: 'bold', halign: 'center' } },
+            ciaStr,
+            timeline
           ];
         });
 
         autoTable(doc, {
           startY: yPos,
-          head: [['GAP ID', 'Framework', 'Descripción', 'Riesgo', 'Plazo']],
+          head: [['ID', 'Framework', 'Control', 'Hallazgo', 'Riesgo', 'CIA', 'Plazo']],
           body: riskTableData,
-          headStyles: { fillColor: [10, 25, 47], textColor: [6, 182, 212], fontSize: 8, fontStyle: 'bold' },
-          bodyStyles: { fontSize: 8 },
-          columnStyles: {
-            0: { cellWidth: 22 },
-            1: { cellWidth: 30 },
-            2: { cellWidth: 70 },
-            3: { cellWidth: 22, halign: 'center' },
-            4: { cellWidth: 24, halign: 'center' }
-          },
+          headStyles: { fillColor: [10, 25, 47], textColor: [6, 182, 212], fontSize: 7, fontStyle: 'bold' },
+          bodyStyles: { fontSize: 7 },
+          columnStyles: { 0: {cellWidth:18}, 1: {cellWidth:22}, 2: {cellWidth:16}, 3: {cellWidth:50}, 4: {cellWidth:18, halign:'center'}, 5: {cellWidth:26}, 6: {cellWidth:18} },
           alternateRowStyles: { fillColor: [245, 248, 252] },
           margin: { left: margin, right: margin },
           theme: 'grid',
-          styles: { cellPadding: 3, lineColor: [200, 210, 220], lineWidth: 0.3 }
+          styles: { cellPadding: 2.5, lineColor: [200, 210, 220], lineWidth: 0.3 }
         });
         yPos = doc.lastAutoTable.finalY + 10;
       } else {
-        addParagraph('No se generaron entradas en la matriz de riesgos. Es necesario realizar un análisis más profundo con documentación adicional.');
+        addParagraph('No se generaron entradas en la matriz de riesgos.');
       }
 
       // ===== 6. ANÁLISIS DETALLADO COMPLETO =====
