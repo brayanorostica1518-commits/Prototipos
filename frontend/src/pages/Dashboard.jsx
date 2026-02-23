@@ -886,7 +886,154 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Gaps Table */}
+        {/* Expanded Findings - Professional Detail */}
+        {analysisData.expanded_findings && analysisData.expanded_findings.length > 0 && (
+          <div className="space-y-4 mb-6" data-testid="expanded-findings">
+            <h3 className="text-xl font-semibold text-cyan-300 px-2" style={{ fontFamily: 'Orbitron, monospace' }}>
+              HALLAZGOS DETALLADOS ({analysisData.expanded_findings.length})
+            </h3>
+            {analysisData.expanded_findings.map((finding, idx) => {
+              const sevColors = {
+                critical: { bg: 'from-red-900/30 to-red-800/20', border: 'border-red-500/40', badge: 'bg-red-600', label: 'CRÍTICO' },
+                major: { bg: 'from-amber-900/30 to-amber-800/20', border: 'border-amber-500/40', badge: 'bg-amber-600', label: 'MAYOR' },
+                minor: { bg: 'from-green-900/30 to-green-800/20', border: 'border-green-500/40', badge: 'bg-green-600', label: 'MENOR' }
+              };
+              const sev = sevColors[finding.severity] || sevColors.major;
+              const cia = finding.cia_impact || {};
+              const risk = finding.risk_evaluation || {};
+
+              return (
+                <Card key={idx} className={`p-0 overflow-hidden glass-card ${sev.border} shadow-lg`} data-testid={`finding-${finding.id}`}>
+                  {/* Finding Header */}
+                  <div className={`bg-gradient-to-r ${sev.bg} p-4 border-b ${sev.border}`}>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-3">
+                        <span className={`${sev.badge} text-white text-xs font-bold px-3 py-1 rounded-full`}>
+                          {sev.label}
+                        </span>
+                        <span className="text-white font-bold text-sm">{finding.id}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-300">
+                        <span className="bg-gray-800/60 px-2 py-1 rounded">{finding.framework}</span>
+                        <span className="bg-gray-800/60 px-2 py-1 rounded">{finding.control}</span>
+                        {finding.suggested_timeline && (
+                          <span className="bg-cyan-800/60 px-2 py-1 rounded">{finding.suggested_timeline}</span>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-white font-semibold mt-2 text-sm">{finding.control_name}</p>
+                  </div>
+
+                  {/* Finding Body */}
+                  <div className="p-5 space-y-4">
+                    {/* Normative Context */}
+                    {finding.normative_context && (
+                      <div>
+                        <h5 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1">Contexto Normativo</h5>
+                        <p className="text-sm text-gray-300 leading-relaxed">{finding.normative_context}</p>
+                      </div>
+                    )}
+
+                    {/* Non-conformity */}
+                    {finding.nonconformity_description && (
+                      <div>
+                        <h5 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1">No Conformidad</h5>
+                        <p className="text-sm text-gray-300 leading-relaxed">{finding.nonconformity_description}</p>
+                      </div>
+                    )}
+
+                    {/* Technical Analysis */}
+                    {finding.technical_analysis && (
+                      <div>
+                        <h5 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1">Análisis Técnico</h5>
+                        <p className="text-sm text-gray-300 leading-relaxed">{finding.technical_analysis}</p>
+                      </div>
+                    )}
+
+                    {/* CIA Impact */}
+                    {(cia.confidentiality || cia.integrity || cia.availability) && (
+                      <div>
+                        <h5 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">Impacto CIA</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          {['confidentiality', 'integrity', 'availability'].map(dim => {
+                            const d = cia[dim];
+                            if (!d) return null;
+                            const lvlColor = d.level === 'ALTO' ? 'text-red-400' : d.level === 'MEDIO' ? 'text-amber-400' : 'text-green-400';
+                            const labels = { confidentiality: 'Confidencialidad', integrity: 'Integridad', availability: 'Disponibilidad' };
+                            return (
+                              <div key={dim} className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/50">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs text-gray-400 font-medium">{labels[dim]}</span>
+                                  <span className={`text-xs font-bold ${lvlColor}`}>{d.level}</span>
+                                </div>
+                                <p className="text-xs text-gray-400 leading-relaxed">{d.justification}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Severity Justification */}
+                    {finding.severity_justification && (
+                      <div>
+                        <h5 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1">Justificación de Severidad</h5>
+                        <p className="text-sm text-gray-300 leading-relaxed">{finding.severity_justification}</p>
+                      </div>
+                    )}
+
+                    {/* Risk Evaluation */}
+                    {risk.risk_level && (
+                      <div>
+                        <h5 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-2">Evaluación de Riesgo</h5>
+                        <div className="bg-gray-800/40 rounded-lg p-3 border border-gray-700/50">
+                          <div className="flex flex-wrap gap-4 text-xs mb-2">
+                            <span className="text-gray-400">Probabilidad: <span className="text-white font-semibold">{risk.probability}</span></span>
+                            <span className="text-gray-400">Impacto: <span className="text-white font-semibold">{risk.impact}</span></span>
+                            <span className="text-gray-400">Riesgo: <span className="text-white font-bold">{risk.risk_level}</span></span>
+                          </div>
+                          {risk.risk_calculation && <p className="text-xs text-gray-500">{risk.risk_calculation}</p>}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recommendation + ISO Alignment */}
+                    <div className="bg-cyan-900/20 rounded-lg p-4 border border-cyan-500/20">
+                      {finding.recommendation && (
+                        <div className="mb-3">
+                          <h5 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1">Recomendación</h5>
+                          <p className="text-sm text-gray-200 leading-relaxed">{finding.recommendation}</p>
+                        </div>
+                      )}
+                      {finding.iso27002_alignment && (
+                        <div>
+                          <h5 className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1">Alineación ISO 27002</h5>
+                          <p className="text-xs text-gray-400">{finding.iso27002_alignment}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Maturity */}
+                    {finding.maturity_level !== undefined && (
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-gray-400">Madurez:</span>
+                        <div className="flex gap-1">
+                          {[1,2,3,4,5].map(lvl => (
+                            <div key={lvl} className={`w-6 h-2 rounded-full ${lvl <= (finding.maturity_level || 0) ? 'bg-cyan-500' : 'bg-gray-700'}`} />
+                          ))}
+                        </div>
+                        <span className="text-xs text-cyan-400 font-semibold">Nivel {finding.maturity_level}/5</span>
+                        {finding.maturity_description && <span className="text-xs text-gray-500 hidden md:inline">- {finding.maturity_description}</span>}
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Gaps Table (backward compat for analyses without expanded_findings) */}
         {analysisData.gaps && analysisData.gaps.length > 0 && (
           <Card className="p-6 bg-white/80 backdrop-blur-sm shadow-lg mb-6" data-testid="gaps-table">
             <h3 className="text-xl font-semibold mb-4 text-gray-900" style={{ fontFamily: 'Space Grotesk' }}>
