@@ -112,8 +112,9 @@ class TestAnalyzeEndpoint:
         )
         
         # The endpoint should accept the format - either 200 (success) or 
-        # an error that's not related to request format (like 500 if LLM fails)
-        assert response.status_code in [200, 500, 504], f"Unexpected status: {response.status_code} - {response.text}"
+        # an error that's not related to request format (like 500 if LLM fails, 520/504 for timeout)
+        # 520 = Cloudflare proxy timeout (expected for long LLM calls)
+        assert response.status_code in [200, 500, 504, 520], f"Unexpected status: {response.status_code} - {response.text}"
         
         if response.status_code == 200:
             data = response.json()
