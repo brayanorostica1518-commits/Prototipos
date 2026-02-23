@@ -62,6 +62,9 @@ from prompt_templates import (
     PromptTemplate
 )
 
+# Import analysis pipeline
+from analysis_pipeline import run_analysis_pipeline
+
 # Import ISO controls database
 from iso_controls import get_all_framework_controls_for_prompt
 
