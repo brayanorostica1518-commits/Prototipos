@@ -470,29 +470,103 @@ export default function ChatInterface() {
                 </div>
               ) : (
                 sessions.map((session) => (
-                  <button
+                  <div
                     key={session.id}
-                    onClick={() => {
-                      loadSession(session.id);
-                      // Cerrar sidebar en móvil después de seleccionar
-                      if (window.innerWidth < 1024) {
-                        setShowSidebar(false);
-                      }
-                    }}
-                    className={`w-full text-left p-3 rounded-lg transition-all glass-card ${
+                    className={`w-full text-left p-3 rounded-lg transition-all glass-card group ${
                       session.id === sessionId ? 'border-cyan-500 bg-cyan-500/10' : 'border-gray-700/50 hover:border-cyan-500/50'
                     }`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <MessageSquare className="w-4 h-4 text-cyan-400" />
-                      <span className="text-white text-sm font-medium truncate">{session.title}</span>
-                    </div>
-                    <span className="text-xs text-gray-500">
-                      {new Date(session.updated_at).toLocaleDateString('es-ES', { 
-                        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-                      })}
-                    </span>
-                  </button>
+                    {editingSessionId === session.id ? (
+                      // Modo edición
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={editingTitle}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              renameSession(session.id, editingTitle);
+                              setEditingSessionId(null);
+                            } else if (e.key === 'Escape') {
+                              setEditingSessionId(null);
+                            }
+                          }}
+                          className="flex-1 bg-gray-800 text-white text-sm px-2 py-1 rounded border border-cyan-500 focus:outline-none"
+                          autoFocus
+                        />
+                        <Button
+                          onClick={() => {
+                            renameSession(session.id, editingTitle);
+                            setEditingSessionId(null);
+                          }}
+                          size="sm"
+                          className="bg-cyan-600 hover:bg-cyan-700 px-2 py-1"
+                        >
+                          ✓
+                        </Button>
+                        <Button
+                          onClick={() => setEditingSessionId(null)}
+                          size="sm"
+                          variant="ghost"
+                          className="text-gray-400 px-2 py-1"
+                        >
+                          ✕
+                        </Button>
+                      </div>
+                    ) : (
+                      // Modo normal
+                      <>
+                        <div className="flex items-center justify-between mb-1">
+                          <button
+                            onClick={() => {
+                              loadSession(session.id);
+                              if (window.innerWidth < 1024) {
+                                setShowSidebar(false);
+                              }
+                            }}
+                            className="flex items-center gap-2 flex-1 min-w-0"
+                          >
+                            <MessageSquare className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                            <span className="text-white text-sm font-medium truncate">{session.title}</span>
+                          </button>
+                          
+                          {/* Botones de acción - aparecen en hover */}
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingSessionId(session.id);
+                                setEditingTitle(session.title);
+                              }}
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-gray-400 hover:text-cyan-400"
+                              title="Renombrar"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteSession(session.id);
+                              }}
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-gray-400 hover:text-red-400"
+                              title="Eliminar"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {new Date(session.updated_at).toLocaleDateString('es-ES', { 
+                            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                          })}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 ))
               )}
             </div>
