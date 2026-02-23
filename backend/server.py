@@ -820,7 +820,9 @@ async def _run_pipeline_background(task_id, session_id, user_id, user_text, fram
             session_id=session_id,
             user_text=user_text,
             frameworks=frameworks,
-            file_contents=file_contents
+            file_contents=file_contents,
+            task_id=task_id,
+            db_ref=db
         )
 
         compliance_scores = pipeline_result['compliance_scores']
