@@ -125,15 +125,15 @@ class TestAnalyzeEndpoint:
             assert "gaps" in data, "Response should contain gaps"
             # NEW: Check for pipeline-specific fields
             assert "expanded_findings" in data or "pipeline_metadata" in data, "Response should contain pipeline data"
-            print(f"✅ Analyze endpoint returned valid response with pipeline data")
+            print("✅ Analyze endpoint returned valid response with pipeline data")
             
             if "pipeline_metadata" in data:
                 metadata = data["pipeline_metadata"]
                 print(f"   Pipeline metadata: {metadata}")
                 assert "total_findings" in metadata or "total_seconds" in metadata, "Metadata should have timing/count info"
         elif response.status_code == 520:
-            print(f"⚠️ Analysis returned 520 (Cloudflare timeout - LLM pipeline takes too long for proxy)")
-            print(f"   This is expected behavior for 3-stage pipeline with real LLM calls")
+            print("⚠️ Analysis returned 520 (Cloudflare timeout - LLM pipeline takes too long for proxy)")
+            print("   This is expected behavior for 3-stage pipeline with real LLM calls")
         else:
             print(f"⚠️ Analysis returned {response.status_code} (may be LLM timeout/error, format was accepted)")
 
@@ -158,7 +158,7 @@ class TestSessionAnalysisEndpoint:
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, dict), f"Analysis should be dict, got {type(data)}"
-        print(f"✅ GET analysis returns dict (empty for new session)")
+        print("✅ GET analysis returns dict (empty for new session)")
 
         # Cleanup
         api_client.delete(f"{BASE_URL}/api/sessions/{session_id}")
