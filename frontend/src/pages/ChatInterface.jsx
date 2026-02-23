@@ -193,7 +193,6 @@ export default function ChatInterface() {
   const [selectedFrameworks, setSelectedFrameworks] = useState(["ISO 27001"]);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  // Sidebar abierto por defecto en desktop, cerrado en móvil
   const [showSidebar, setShowSidebar] = useState(
     typeof window !== 'undefined' ? window.innerWidth >= 1024 : false
   );
@@ -204,6 +203,8 @@ export default function ChatInterface() {
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editingTitle, setEditingTitle] = useState('');
   const messagesEndRef = useRef(null);
+  const initRef = useRef(false);
+  const creatingRef = useRef(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -214,54 +215,61 @@ export default function ChatInterface() {
   }, [messages]);
 
   useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+
     const initializeApp = async () => {
-      await loadSessions();
-      // Solo crear sesión si no hay ninguna
-      const existingSessions = await loadSessions();
-      if (!sessionId && (!existingSessions || existingSessions.length === 0)) {
-        await createSession();
+      try {
+        const response = await secureAxios.get('/sessions');
+        const existingSessions = response.data || [];
+        setSessions(existingSessions);
+
+        if (existingSessions.length === 0) {
+          await handleCreateSession(false);
+        } else {
+          setSessionId(existingSessions[0].id);
+        }
+      } catch (error) {
+        console.error('Error initializing app:', error);
       }
     };
-    
+
     initializeApp();
-    
-    // Mostrar onboarding si es primera vez
+
     const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
     if (!hasSeenOnboarding) {
       setTimeout(() => setShowOnboarding(true), 1000);
     }
-  }, []); // Ejecutar solo una vez al montar
+  }, []);
 
   const loadSessions = async () => {
     try {
       const response = await secureAxios.get('/sessions');
       setSessions(response.data);
-      return response.data; // Retornar sesiones para verificación
+      return response.data;
     } catch (error) {
       console.error('Error loading sessions:', error);
       return [];
     }
   };
 
-  const createSession = async () => {
-    // Prevenir múltiples llamadas simultáneas
-    if (isCreatingSession) {
-      console.log('Ya se está creando una sesión...');
-      return;
-    }
-    
+  const handleCreateSession = async (showToast = true) => {
+    if (creatingRef.current) return;
+    creatingRef.current = true;
+    setIsCreatingSession(true);
+
     try {
-      setIsCreatingSession(true);
       const response = await secureAxios.post('/sessions');
       setSessionId(response.data.id);
-      setMessages([]); // Limpiar mensajes de sesión anterior
-      setUploadedFiles([]); // Limpiar archivos
+      setMessages([]);
+      setUploadedFiles([]);
       await loadSessions();
-      toast.success('Nueva sesión creada');
+      if (showToast) toast.success('Nueva sesión creada');
     } catch (error) {
       console.error("Error creating session:", error);
-      toast.error("Error al crear la sesión");
+      if (showToast) toast.error("Error al crear la sesión");
     } finally {
+      creatingRef.current = false;
       setIsCreatingSession(false);
     }
   };
