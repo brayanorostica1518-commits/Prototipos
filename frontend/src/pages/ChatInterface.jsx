@@ -372,6 +372,9 @@ export default function ChatInterface() {
     }
   };
 
+  const [pipelineStage, setPipelineStage] = useState(null);
+  const pollingRef = useRef(null);
+
   const handleSendMessage = async () => {
     if (!inputMessage.trim() && uploadedFiles.length === 0) {
       toast.error("Por favor escribe un mensaje o sube archivos");
@@ -389,6 +392,7 @@ export default function ChatInterface() {
     }
 
     setIsAnalyzing(true);
+    setPipelineStage('stage1');
 
     const userMessage = {
       role: "user",
@@ -396,27 +400,98 @@ export default function ChatInterface() {
       file_names: uploadedFiles.map(f => f.original_name),
       timestamp: new Date().toISOString()
     };
-    setMessages([...messages, userMessage]);
+    setMessages(prev => [...prev, userMessage]);
+
+    const savedInput = inputMessage;
+    const savedFiles = [...uploadedFiles];
+    setInputMessage("");
+    setUploadedFiles([]);
 
     try {
       const response = await secureAxios.post('/analyze', {
         session_id: sessionId,
-        message: inputMessage,
+        message: savedInput,
         frameworks: selectedFrameworks,
-        file_ids: uploadedFiles
+        file_ids: savedFiles
       });
 
-      setMessages(prev => [...prev, response.data.ai_response]);
-      setInputMessage("");
-      setUploadedFiles([]);
-      toast.success("Análisis completado");
+      const taskId = response.data.task_id;
+      if (!taskId) {
+        throw new Error("No task_id received");
+      }
+
+      // Start polling for task status
+      const pollForResults = async () => {
+        let attempts = 0;
+        const maxAttempts = 120; // 120 * 3s = 6 minutes max
+
+        const poll = () => {
+          pollingRef.current = setTimeout(async () => {
+            try {
+              attempts++;
+              const statusRes = await secureAxios.get(`/analyze/status/${taskId}`);
+              const task = statusRes.data;
+
+              setPipelineStage(task.stage || 'processing');
+
+              if (task.status === 'completed') {
+                // Load the new messages
+                const messagesRes = await secureAxios.get(`/sessions/${sessionId}/messages`);
+                setMessages(messagesRes.data);
+                setIsAnalyzing(false);
+                setPipelineStage(null);
+                toast.success("Análisis completado");
+                return;
+              }
+
+              if (task.status === 'error') {
+                setIsAnalyzing(false);
+                setPipelineStage(null);
+                toast.error(`Error en el análisis: ${task.error || 'Error desconocido'}`);
+                return;
+              }
+
+              if (attempts >= maxAttempts) {
+                setIsAnalyzing(false);
+                setPipelineStage(null);
+                toast.error("El análisis tardó demasiado. Verifica en el Dashboard.");
+                return;
+              }
+
+              // Continue polling
+              poll();
+            } catch (err) {
+              console.error("Polling error:", err);
+              if (attempts >= maxAttempts) {
+                setIsAnalyzing(false);
+                setPipelineStage(null);
+                toast.error("Error de conexión durante el análisis");
+              } else {
+                poll(); // Retry
+              }
+            }
+          }, 3000);
+        };
+
+        poll();
+      };
+
+      await pollForResults();
+
     } catch (error) {
-      console.error("Error analyzing:", error);
-      toast.error("Error al analizar");
-    } finally {
+      console.error("Error starting analysis:", error);
       setIsAnalyzing(false);
+      setPipelineStage(null);
+      toast.error("Error al iniciar el análisis");
     }
   };
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearTimeout(pollingRef.current);
+    };
+  }, []);
 
   const handleTemplateSelect = (filledPrompt, frameworks) => {
     setInputMessage(filledPrompt);
