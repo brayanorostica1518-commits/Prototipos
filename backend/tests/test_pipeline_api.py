@@ -131,6 +131,9 @@ class TestAnalyzeEndpoint:
                 metadata = data["pipeline_metadata"]
                 print(f"   Pipeline metadata: {metadata}")
                 assert "total_findings" in metadata or "total_seconds" in metadata, "Metadata should have timing/count info"
+        elif response.status_code == 520:
+            print(f"⚠️ Analysis returned 520 (Cloudflare timeout - LLM pipeline takes too long for proxy)")
+            print(f"   This is expected behavior for 3-stage pipeline with real LLM calls")
         else:
             print(f"⚠️ Analysis returned {response.status_code} (may be LLM timeout/error, format was accepted)")
 
