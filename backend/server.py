@@ -184,7 +184,12 @@ class AnalysisResult(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-class Session(BaseModel):
+class SessionUpdate(BaseModel):
+    """Session update request body"""
+    title: Optional[str] = None
+    retention_policy: Optional[str] = None
+
+
     """Session model with data retention policy"""
     model_config = ConfigDict(extra="ignore")
     
@@ -526,8 +531,7 @@ async def delete_session(
 async def update_session(
     session_id: str,
     request: Request,
-    title: str = None,
-    retention_policy: str = None,
+    body: SessionUpdate,
     current_user: User = Depends(get_current_user)
 ):
     """
@@ -535,7 +539,6 @@ async def update_session(
     Only the owner can update their session
     """
     try:
-        # Verify session belongs to user
         session = await db.sessions.find_one({
             "id": session_id,
             "user_id": current_user.id
@@ -544,31 +547,28 @@ async def update_session(
         if not session:
             raise HTTPException(status_code=404, detail="Session not found or access denied")
         
-        # Build update document
         update_doc = {"updated_at": datetime.now(timezone.utc).isoformat()}
         
-        if title is not None and title.strip():
-            update_doc["title"] = sanitize_text(title.strip(), max_length=200)
+        if body.title is not None and body.title.strip():
+            update_doc["title"] = sanitize_text(body.title.strip(), max_length=200)
         
-        if retention_policy is not None:
-            if retention_policy not in ["none", "72h", "permanent"]:
+        if body.retention_policy is not None:
+            if body.retention_policy not in ["none", "72h", "permanent"]:
                 raise HTTPException(status_code=400, detail="Invalid retention_policy")
             
-            update_doc["retention_policy"] = retention_policy
+            update_doc["retention_policy"] = body.retention_policy
             
-            # Recalculate expires_at
             created_at = session.get('created_at')
             if isinstance(created_at, str):
                 created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
             
-            if retention_policy == "none":
+            if body.retention_policy == "none":
                 update_doc["expires_at"] = (created_at + timedelta(hours=1)).isoformat()
-            elif retention_policy == "72h":
+            elif body.retention_policy == "72h":
                 update_doc["expires_at"] = (created_at + timedelta(hours=72)).isoformat()
-            else:  # permanent
+            else:
                 update_doc["expires_at"] = None
         
-        # Update session
         result = await db.sessions.update_one(
             {"id": session_id, "user_id": current_user.id},
             {"$set": update_doc}
