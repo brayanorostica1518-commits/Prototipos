@@ -837,19 +837,19 @@ export default function ChatInterface() {
                       </div>
                       <div className="space-y-2 text-xs text-gray-400">
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
-                          <span>Etapa 1: Clasificación de hallazgos...</span>
+                          <div className={`w-2 h-2 rounded-full ${pipelineStage === 'stage1' ? 'bg-cyan-400 animate-pulse' : (pipelineStage === 'stage2' || pipelineStage === 'stage3' || pipelineStage === 'done') ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+                          <span className={pipelineStage === 'stage1' ? 'text-cyan-300' : ''}>Etapa 1: Clasificación de hallazgos</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-gray-600"></div>
-                          <span>Etapa 2: Expansión técnica individual</span>
+                          <div className={`w-2 h-2 rounded-full ${pipelineStage === 'stage2' ? 'bg-cyan-400 animate-pulse' : (pipelineStage === 'stage3' || pipelineStage === 'done') ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+                          <span className={pipelineStage === 'stage2' ? 'text-cyan-300' : ''}>Etapa 2: Expansión técnica individual</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-gray-600"></div>
-                          <span>Etapa 3: Informe ejecutivo consolidado</span>
+                          <div className={`w-2 h-2 rounded-full ${pipelineStage === 'stage3' ? 'bg-cyan-400 animate-pulse' : pipelineStage === 'done' ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+                          <span className={pipelineStage === 'stage3' ? 'text-cyan-300' : ''}>Etapa 3: Informe ejecutivo consolidado</span>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500 mt-3">Este proceso puede tomar varios minutos...</p>
+                      <p className="text-xs text-gray-500 mt-3">Este proceso puede tomar 2-3 minutos...</p>
                     </div>
                   </div>
                 )}
