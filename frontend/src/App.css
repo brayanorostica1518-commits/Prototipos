@@ -220,7 +220,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Cyber Borders */
 .cyber-border {
   position: relative;
-  border: 1px solid rgba(6, 182, 212, 0.3);
+  border: 1px solid var(--border-color);
 }
 
 .cyber-border::before {
@@ -232,7 +232,7 @@ h1, h2, h3, h4, h5, h6 {
   bottom: -1px;
   background: linear-gradient(45deg, 
     transparent 0%, 
-    rgba(6, 182, 212, 0.1) 50%, 
+    var(--border-hover) 50%, 
     transparent 100%);
   border-radius: inherit;
   z-index: -1;
@@ -253,7 +253,7 @@ h1, h2, h3, h4, h5, h6 {
   height: 2px;
   background: linear-gradient(90deg, 
     transparent 0%, 
-    rgba(6, 182, 212, 0.8) 50%, 
+    var(--accent-primary) 50%, 
     transparent 100%);
   animation: scanline 3s linear infinite;
   pointer-events: none;
@@ -262,9 +262,9 @@ h1, h2, h3, h4, h5, h6 {
 /* Neon Button */
 .neon-button {
   position: relative;
-  background: linear-gradient(135deg, #22d3ee 0%, #3b82f6 100%);
-  border: 2px solid rgba(34, 211, 238, 0.6);
-  color: white;
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%);
+  border: 2px solid var(--border-hover);
+  color: var(--text-primary);
   padding: 0.75rem 1.5rem;
   border-radius: 0.5rem;
   font-weight: 600;
