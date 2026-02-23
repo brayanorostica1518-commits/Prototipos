@@ -694,319 +694,99 @@ async def upload_files(request: Request, files: List[UploadFile] = File(...)):
 
 
 @api_router.post("/analyze")
-@limiter.limit("3/minute")  # Conservative limit for AI analysis
+@limiter.limit("3/minute")
 async def analyze_assessment(
     request: Request,
     data: AnalysisRequest,
     current_user: User = Depends(get_current_user)
 ):
     """
-    Analyze assessment files against selected frameworks
-    With comprehensive security validations and user authentication
+    3-Stage Analysis Pipeline:
+    Stage 1: Classification of findings
+    Stage 2: Technical expansion per finding
+    Stage 3: Consolidated executive report
     """
     try:
         session_id = data.session_id
         message_content = data.message
         frameworks = data.frameworks
         file_ids = data.file_ids
-        
+
         # Verify session belongs to current user
         session = await db.sessions.find_one({
             "id": session_id,
             "user_id": current_user.id
         })
         if not session:
-            logger.error(f"Session {session_id} not found or access denied for user {current_user.id}")
-            raise HTTPException(
-                status_code=403,
-                detail="Session not found or access denied"
-            )
-        
-        # Prepare file attachments and extracted text
+            raise HTTPException(status_code=403, detail="Session not found or access denied")
+
+        # Prepare file attachments
         file_contents = []
         file_names = []
         extracted_texts = []
-        
-        # Gemini-supported mime types
         gemini_supported = {'.pdf', '.csv', '.txt'}
-        
-        # Limit number of files in analysis
+
         if len(file_ids) > 10:
-            raise HTTPException(
-                status_code=400,
-                detail="Maximum 10 files allowed for analysis"
-            )
-        
+            raise HTTPException(status_code=400, detail="Maximum 10 files allowed")
+
         for file_info in file_ids:
             file_path = Path(file_info['path'])
-            
-            # Security check: ensure file is in upload directory
             if not file_path.is_relative_to(UPLOAD_DIR):
-                log_security_event(
-                    "PATH_TRAVERSAL_ATTEMPT",
-                    {"path": str(file_path)},
-                    severity="WARNING"
-                )
-                raise HTTPException(
-                    status_code=400,
-                    detail="Invalid file path"
-                )
-            
+                raise HTTPException(status_code=400, detail="Invalid file path")
+
             if file_path.exists():
                 ext = file_path.suffix.lower()
                 safe_filename = sanitize_filename(file_info['original_name'])
                 file_names.append(safe_filename)
-                
-                # Handle files based on type
+
                 if ext in gemini_supported:
-                    mime_map = {
-                        '.pdf': 'application/pdf',
-                        '.csv': 'text/csv',
-                        '.txt': 'text/plain'
-                    }
-                    mime_type = mime_map.get(ext, 'text/plain')
-                    
+                    mime_map = {'.pdf': 'application/pdf', '.csv': 'text/csv', '.txt': 'text/plain'}
                     file_contents.append(FileContentWithMimeType(
                         file_path=str(file_path),
-                        mime_type=mime_type
+                        mime_type=mime_map.get(ext, 'text/plain')
                     ))
                 elif ext in ['.xlsx', '.xls']:
                     text = extract_text_from_excel(file_path)
-                    extracted_texts.append(
-                        f"\n=== Contenido de {safe_filename} ===\n{text}"
-                    )
+                    extracted_texts.append(f"\n=== Contenido de {safe_filename} ===\n{text}")
                 elif ext in ['.docx', '.doc']:
                     text = extract_text_from_word(file_path)
-                    extracted_texts.append(
-                        f"\n=== Contenido de {safe_filename} ===\n{text}"
-                    )
-        
-        # Build system message with framework-specific controls
+                    extracted_texts.append(f"\n=== Contenido de {safe_filename} ===\n{text}")
+
+        # Build user text for the pipeline
         frameworks_text = ", ".join(frameworks)
-        controls_info = get_all_framework_controls_for_prompt(frameworks)
-        
-        system_message = f"""Eres un auditor senior certificado en seguridad de la información y cumplimiento normativo, con experiencia en ISO/IEC 27001:2022, NIST CSF, OWASP, GDPR y otros marcos.
-
-Tu tarea es generar un INFORME DE AUDITORÍA PROFESIONAL evaluando documentos contra: {frameworks_text}.
-
-{controls_info}
-
-═══════════════════════════════════════════════════════════════════
-ESTRUCTURA DEL INFORME (OBLIGATORIA - ESTILO AUDITORÍA FORMAL)
-═══════════════════════════════════════════════════════════════════
-
-1. RESUMEN EJECUTIVO
-
-[Redactar 3-4 párrafos técnicos profesionales que incluyan:]
-- Alcance de la evaluación y marcos normativos aplicados
-- Hallazgos principales identificados
-- Nivel de madurez general del control evaluado (usar escala CMMI: 1-Inicial, 2-Gestionado, 3-Definido, 4-Cuantitativo, 5-Optimizado)
-- Estado global de cumplimiento (porcentaje agregado)
-- Conclusión ejecutiva sobre postura de seguridad
-
-2. CONTEXTO NORMATIVO Y CONTROLES EVALUADOS
-
-[Para cada framework en {frameworks_text}:]
-
-Framework: [Nombre completo del marco normativo]
-Versión: [Especificar versión, ej: ISO/IEC 27001:2022, NIST CSF v1.1]
-Controles Específicos Evaluados:
-- Control X.X.X: [Nombre completo del control]
-- Control Y.Y.Y: [Nombre completo del control]
-[Listar todos los controles relevantes evaluados]
-
-Objetivo del Marco: [Breve descripción del propósito del marco]
-
-3. ANÁLISIS DETALLADO POR FRAMEWORK
-
-[Para cada framework:]
-
-══════════════════════════════════════════════════════════════
-FRAMEWORK: {frameworks[0] if frameworks else '[Framework]'}
-══════════════════════════════════════════════════════════════
-
-A) CONTROLES EVALUADOS Y HALLAZGOS
-
-Control: [Número y nombre completo, ej: A.8.5 Autenticación Segura - ISO 27001:2022]
-Referencia Normativa: [Cita exacta del control/cláusula]
-
-EVIDENCIA ANALIZADA:
-[Citar fragmentos ESPECÍFICOS del documento que fundamentan el hallazgo]
-- "Extracto textual relevante del documento..."
-- "Otra evidencia documental identificada..."
-
-FUNDAMENTACIÓN TÉCNICA:
-[Descripción técnica detallada del hallazgo, sin frases genéricas]
-Estado Actual Identificado: [Qué se encontró implementado]
-Requisito del Control: [Qué exige específicamente el control]
-Gap Identificado: [Diferencia precisa entre estado actual y requerido]
-
-IMPACTO EN TRIADA CIA:
-- Confidencialidad: [BAJO/MEDIO/ALTO] - Justificación técnica
-- Integridad: [BAJO/MEDIO/ALTO] - Justificación técnica
-- Disponibilidad: [BAJO/MEDIO/ALTO] - Justificación técnica
-
-NIVEL DE RIESGO: [CRÍTICO/ALTO/MEDIO/BAJO]
-Justificación del Riesgo: [Análisis técnico fundamentado considerando:
-- Probabilidad de materialización
-- Impacto potencial en operaciones
-- Exposición actual de activos
-- Contexto organizacional]
-
-RECOMENDACIÓN TÉCNICA ESPECÍFICA:
-Acción Inmediata: [Medida concreta, específica y medible]
-Alineación Normativa: [ISO/IEC 27002:2022 cláusula X / NIST CSF función Y / etc.]
-Justificación de la Recomendación: [Por qué esta medida mitiga efectivamente el riesgo]
-
-PLAN DE IMPLEMENTACIÓN:
-Fase 1 (0-30 días): [Acciones inmediatas priorizadas]
-Fase 2 (30-90 días): [Implementaciones a mediano plazo]
-Fase 3 (90+ días): [Mejoras continuas y optimización]
-
-Prioridad de Implementación: [P1-Crítica / P2-Alta / P3-Media / P4-Baja]
-Esfuerzo Estimado: [Bajo/Medio/Alto]
-Recursos Necesarios: [Personal, herramientas, presupuesto estimado]
-
-B) NIVEL DE CUMPLIMIENTO DEL FRAMEWORK
-Porcentaje de Cumplimiento: [X]%
-Estado: [Crítico (<40%) / Deficiente (40-60%) / Aceptable (60-75%) / Bueno (75-85%) / Excelente (>85%)]
-Controles Implementados: [X de Y]
-Controles Parcialmente Implementados: [X de Y]
-Controles No Implementados: [X de Y]
-
-C) NIVEL DE MADUREZ (Modelo CMMI)
-Nivel Actual: [1-5] - [Nombre del nivel]
-Justificación: [Análisis técnico del por qué se asigna este nivel]
-Nivel Objetivo Recomendado: [1-5]
-Brecha de Madurez: [Gap entre actual y objetivo]
-
-4. MATRIZ CONSOLIDADA DE CUMPLIMIENTO
-
-TABLA DE CUMPLIMIENTO:
-|| Framework | Cumplimiento % | Controles OK | Controles Gap | Estado Global | Madurez | Prioridad ||
-||-----------|----------------|--------------|---------------|---------------|---------|-----------|
-|| [Nombre Framework] | [X]% | [X/Y] | [Z] | [Estado] | Nivel [N] | [P1/P2/P3] |
-
-5. TABLA RESUMEN DE GAPS CRÍTICOS
-
-TABLA DE GAPS PRIORIZADOS:
-|| GAP ID | Framework | Control Afectado | Gap Detectado | Riesgo | Impacto CIA | Prioridad | Plazo ||
-||--------|-----------|------------------|---------------|--------|-------------|-----------|-------|
-|| GAP-001 | ISO 27001 | A.X.Y [Nombre] | [Descripción técnica] | ALTO | C:Alto I:Medio D:Bajo | P1 | 30 días |
-|| GAP-002 | [Framework] | [Control] | [Gap] | [Nivel] | [CIA] | [P#] | [Días] |
-
-[Generar mínimo 5-10 gaps priorizados por severidad]
-
-6. RECOMENDACIONES PRIORIZADAS CON FUNDAMENTACIÓN
-
-PRIORIDAD CRÍTICA (P1) - Implementación Inmediata (0-30 días):
-
-R-001: [Control ISO 27001:2022 A.X.Y - Nombre del Control]
-Recomendación: [Acción específica, medible y técnica]
-Fundamentación: [Por qué es crítica, qué riesgo mitiga]
-Alineación: ISO/IEC 27002:2022 cláusula [X]
-KPI de Éxito: [Métrica cuantificable]
-Responsable Sugerido: [Rol/Departamento]
-
-R-002: [Siguiente recomendación crítica]
-[Mismo formato]
-
-PRIORIDAD ALTA (P2) - Implementación Corto Plazo (30-90 días):
-[Mismo formato para cada recomendación]
-
-PRIORIDAD MEDIA (P3) - Implementación Mediano Plazo (3-6 meses):
-[Mismo formato]
-
-7. MATRIZ DE CONTROLES TÉCNICOS
-
-TABLA DE CONTROLES:
-|| Control | Framework | Estado | Efectividad | Evidencia | Riesgo Residual | Acción Requerida ||
-||---------|-----------|--------|-------------|-----------|-----------------|------------------|
-|| A.X.Y [Nombre] | ISO 27001 | Parcial | Media | [Ref doc] | Medio | [Acción específica] |
-
-8. ROADMAP DE REMEDIACIÓN (PLAN DE ACCIÓN)
-
-FASE 1: REMEDIACIÓN URGENTE (Días 0-30)
-Objetivo: Mitigar riesgos críticos inmediatos
-Entregables:
-- [Entregable 1 específico]
-- [Entregable 2 específico]
-Controles a Implementar: [GAP-001, GAP-003, GAP-005]
-Recursos: [Equipo, presupuesto, herramientas]
-Hito de Validación: [Criterio de éxito medible]
-
-FASE 2: IMPLEMENTACIÓN ESTRUCTURAL (Días 30-90)
-[Mismo formato]
-
-FASE 3: OPTIMIZACIÓN Y MEJORA CONTINUA (Días 90-180)
-[Mismo formato]
-
-9. MÉTRICAS DE SEGUIMIENTO (KPIs)
-
-TABLA DE KPIs:
-|| Métrica | Valor Actual | Valor Objetivo | Frecuencia | Responsable | Método de Medición ||
-||---------|--------------|----------------|------------|-------------|-------------------|
-|| % Cumplimiento ISO 27001 | [X]% | >85% | Trimestral | CISO | Auditoría interna |
-|| Tiempo Medio Remediación Gaps | [X días] | <30 días | Mensual | Seguridad | Ticketing |
-
-10. NIVEL DE MADUREZ CONSOLIDADO
-
-Framework: [Nombre]
-Nivel de Madurez Actual: [1-5] - [Descripción del nivel]
-Análisis de Capacidad: [Evaluación detallada de procesos, documentación, controles]
-Nivel de Madurez Objetivo: [1-5]
-Gap de Madurez: [Análisis de la brecha]
-Ruta de Evolución: [Pasos para alcanzar nivel objetivo]
-
-═══════════════════════════════════════════════════════════════════
-REQUISITOS DE FORMATO Y ESTILO
-═══════════════════════════════════════════════════════════════════
-
-LENGUAJE:
-- Técnico y formal (estilo informe de auditoría profesional)
-- Sin frases genéricas o placeholders
-- Fundamentación normativa en cada recomendación
-- Datos cuantitativos siempre que sea posible
-- Citas exactas de controles y cláusulas
-
-TABLAS:
-- Usar formato con || (doble pipe) para columnas
-- Headers claros y datos alineados
-- No usar markdown (**, ##, etc.)
-
-ESTRUCTURA:
-- MAYÚSCULAS para títulos principales
-- Guiones (-) para listas
-- Referencias específicas (ej: "ISO/IEC 27001:2022 Anexo A.8.5" no "Control de autenticación")
-
-NOTA LEGAL:
-Este informe ha sido generado mediante análisis de inteligencia artificial y constituye una evaluación orientativa. 
-Debe ser revisado y validado por un auditor certificado (CISA, CISSP, ISO 27001 LA) antes de uso oficial o toma de decisiones críticas.
-No constituye una certificación de cumplimiento ni asesoramiento legal vinculante."""
-        
-        # Initialize LLM Chat
-        chat = LlmChat(
-            api_key=os.environ['EMERGENT_LLM_KEY'],
-            session_id=session_id,
-            system_message=system_message
-        ).with_model("gemini", "gemini-2.0-flash")
-        
-        # Build user message
         user_text = f"{message_content}\n\nMarcos a evaluar: {frameworks_text}"
         if file_names:
             user_text += f"\n\nArchivos adjuntos: {', '.join(file_names)}"
-        
         if extracted_texts:
             user_text += "\n\n" + "\n".join(extracted_texts)
-        
-        user_message = UserMessage(
-            text=user_text,
+
+        # Run 3-stage analysis pipeline
+        pipeline_result = await run_analysis_pipeline(
+            api_key=os.environ['EMERGENT_LLM_KEY'],
+            session_id=session_id,
+            user_text=user_text,
+            frameworks=frameworks,
             file_contents=file_contents if file_contents else None
         )
-        
-        # Get AI response with timeout
-        ai_response = await chat.send_message(user_message)
-        
+
+        compliance_scores = pipeline_result['compliance_scores']
+        expanded_findings = pipeline_result['expanded_findings']
+        executive_report = pipeline_result['executive_report']
+
+        # Convert expanded findings to serializable gaps (backward compat)
+        gaps = []
+        for f in expanded_findings:
+            sev_map = {'critical': 'high', 'major': 'medium', 'minor': 'low'}
+            gaps.append({
+                "framework": f.get('framework', 'N/A'),
+                "control": f.get('control', 'N/A'),
+                "control_name": f.get('control_name', ''),
+                "description": f.get('nonconformity_description', f.get('description', '')),
+                "severity": sev_map.get(f.get('severity', 'major'), 'medium'),
+                "recommendation": f.get('recommendation', ''),
+                "suggested_timeline": f.get('suggested_timeline', ''),
+            })
+
         # Save user message
         user_msg = ChatMessage(
             session_id=session_id,
@@ -1017,74 +797,60 @@ No constituye una certificación de cumplimiento ni asesoramiento legal vinculan
         user_doc = user_msg.model_dump()
         user_doc['timestamp'] = user_doc['timestamp'].isoformat()
         await db.messages.insert_one(user_doc)
-        
-        # Save AI response
+
+        # Save AI response (Stage 3 executive report)
         ai_msg = ChatMessage(
             session_id=session_id,
             role="assistant",
-            content=ai_response
+            content=executive_report
         )
         ai_doc = ai_msg.model_dump()
         ai_doc['timestamp'] = ai_doc['timestamp'].isoformat()
         await db.messages.insert_one(ai_doc)
-        
-        # Extract compliance scores and gaps
-        compliance_scores = extract_compliance_scores(ai_response, frameworks)
-        gaps = extract_gaps(ai_response, frameworks)
-        
-        # Save analysis result with user_id
+
+        # Save analysis result with expanded findings
         analysis = AnalysisResult(
             session_id=session_id,
             user_id=current_user.id,
             frameworks=frameworks,
-            analysis=ai_response,
+            analysis=executive_report,
             compliance_scores=compliance_scores,
             gaps=gaps
         )
         analysis_doc = analysis.model_dump()
         analysis_doc['timestamp'] = analysis_doc['timestamp'].isoformat()
+        analysis_doc['expanded_findings'] = expanded_findings
+        analysis_doc['pipeline_metadata'] = pipeline_result['pipeline_metadata']
+        analysis_doc['stage1_analysis'] = pipeline_result['stage1_analysis']
         await db.analysis_results.insert_one(analysis_doc)
-        
+
         # Update session timestamp
         await db.sessions.update_one(
             {"id": session_id},
             {"$set": {"updated_at": datetime.now(timezone.utc).isoformat()}}
         )
-        
-        log_security_event(
-            "ANALYSIS_COMPLETED",
-            {
-                "session_id": session_id,
-                "frameworks": frameworks,
-                "file_count": len(file_names)
-            }
-        )
-        
+
+        log_security_event("ANALYSIS_COMPLETED", {
+            "session_id": session_id,
+            "frameworks": frameworks,
+            "file_count": len(file_names),
+            "pipeline": pipeline_result['pipeline_metadata']
+        })
+
         return {
             "user_message": user_msg.model_dump(),
             "ai_response": ai_msg.model_dump(),
             "compliance_scores": compliance_scores,
-            "gaps": gaps
+            "gaps": gaps,
+            "expanded_findings": expanded_findings,
+            "pipeline_metadata": pipeline_result['pipeline_metadata']
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error analyzing assessment: {type(e).__name__}: {str(e)}", exc_info=True)
-        log_security_event(
-            "ANALYSIS_ERROR",
-            {
-                "error": str(e),
-                "error_type": type(e).__name__,
-                "session_id": session_id,
-                "frameworks": frameworks
-            },
-            severity="ERROR"
-        )
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al analizar: {str(e)}"
-        )
+        logger.error(f"Error in analysis pipeline: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error al analizar: {str(e)}")
 
 
 @api_router.get("/sessions/{session_id}/messages", response_model=List[ChatMessage])
