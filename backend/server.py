@@ -251,6 +251,39 @@ app.add_middleware(
 )
 
 
+# ==================== DATA RETENTION ====================
+
+async def check_session_expired(session_id: str, user_id: str) -> bool:
+    """
+    Check if a session has expired based on retention policy
+    
+    Args:
+        session_id: Session ID to check
+        user_id: User ID (for authorization)
+        
+    Returns:
+        True if expired, False otherwise
+    """
+    session = await db.sessions.find_one(
+        {"id": session_id, "user_id": user_id},
+        {"_id": 0, "expires_at": 1}
+    )
+    
+    if not session:
+        return True  # Session not found = expired
+    
+    expires_at = session.get('expires_at')
+    if expires_at is None:
+        return False  # Permanent retention
+    
+    # Parse expiration date
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+    
+    now = datetime.now(timezone.utc)
+    return now > expires_at
+
+
 # ==================== FILE HANDLING ====================
 
 # Secure temporary storage
