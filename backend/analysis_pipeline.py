@@ -396,7 +396,7 @@ async def run_analysis_pipeline(api_key, session_id, user_text, frameworks, file
     logger.info(f"[Pipeline] Starting for session {session_id}")
 
     async def _update_task(stage, label, progress):
-        if task_id and db_ref:
+        if task_id is not None and db_ref is not None:
             await db_ref.analysis_tasks.update_one(
                 {"task_id": task_id},
                 {"$set": {"stage": stage, "stage_label": label, "progress": progress}}
