@@ -26,7 +26,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, validator
 from typing import List, Optional, Dict, Annotated
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import tempfile
 import shutil
 from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
