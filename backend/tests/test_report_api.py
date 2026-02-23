@@ -16,10 +16,10 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
     BASE_URL = "https://compliance-audit-ai-1.preview.emergentagent.com"
 
-# Test data created by MongoDB setup
-TEST_SESSION_TOKEN = "test_report_1771886002058"
-TEST_USER_ID = "test-report-user-1771886002058"
-TEST_SESSION_ID = "test-session-report-1771886002085"
+# Test data created by MongoDB setup (proper UUID format for session_id)
+TEST_SESSION_TOKEN = "test_report_1771886086619"
+TEST_USER_ID = "test-user-dcc425fa-f078-43a1-ba83-39942c2ce2ca"
+TEST_SESSION_ID = "30c8bbe2-9582-4d58-bc7a-aeef7ee15034"
 
 
 @pytest.fixture
