@@ -201,6 +201,8 @@ export default function ChatInterface() {
   const [showMobileFrameworks, setShowMobileFrameworks] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [editingSessionId, setEditingSessionId] = useState(null);
+  const [editingTitle, setEditingTitle] = useState('');
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
