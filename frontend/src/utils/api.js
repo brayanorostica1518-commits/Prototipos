@@ -12,7 +12,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 // Create axios instance with security configurations
 const secureAxios = axios.create({
   baseURL: `${BACKEND_URL}/api`,
-  timeout: 180000, // 180 second timeout (3 minutes for analysis)
+  timeout: 360000, // 6 minutes for 3-stage analysis pipeline
   headers: {
     'Content-Type': 'application/json',
   },
