@@ -753,11 +753,28 @@ export default function ChatInterface() {
                 )}
                 {isAnalyzing && (
                   <div className="flex justify-start animate-fade-in">
-                    <div className="glass-card rounded-2xl p-4 border-cyan-500/20">
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
-                        <span className="text-sm text-gray-400">Analizando...</span>
+                    <div className="glass-card rounded-2xl p-5 border-cyan-500/20 max-w-md">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Loader2 className="w-5 h-5 animate-spin text-cyan-400" />
+                        <span className="text-sm font-semibold text-cyan-300" style={{ fontFamily: 'Orbitron, monospace' }}>
+                          PIPELINE DE ANÁLISIS
+                        </span>
                       </div>
+                      <div className="space-y-2 text-xs text-gray-400">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
+                          <span>Etapa 1: Clasificación de hallazgos...</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-gray-600"></div>
+                          <span>Etapa 2: Expansión técnica individual</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-gray-600"></div>
+                          <span>Etapa 3: Informe ejecutivo consolidado</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-3">Este proceso puede tomar varios minutos...</p>
                     </div>
                   </div>
                 )}
