@@ -233,8 +233,10 @@ export default function ChatInterface() {
     try {
       const response = await secureAxios.get('/sessions');
       setSessions(response.data);
+      return response.data; // Retornar sesiones para verificación
     } catch (error) {
       console.error('Error loading sessions:', error);
+      return [];
     }
   };
 
