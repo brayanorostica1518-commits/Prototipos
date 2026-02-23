@@ -461,7 +461,7 @@ export default function ChatInterface() {
             </div>
             
             <Button
-              onClick={createSession}
+              onClick={() => handleCreateSession(true)}
               disabled={isCreatingSession}
               className="w-full neon-button"
               data-testid="new-session-btn"
