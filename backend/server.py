@@ -349,26 +349,51 @@ async def root(request: Request):
 @limiter.limit("10/minute")  # Limit session creation
 async def create_session(
     request: Request,
+    retention_policy: str = "72h",  # Default: 72 hours retention
     current_user: User = Depends(get_current_user)
 ):
     """
-    Create a new chat session for authenticated user
+    Create a new chat session for authenticated user with configurable retention
+    
+    Args:
+        retention_policy: "none" (delete after 1h), "72h" (3 days), "permanent"
+    
     Rate limited to prevent abuse
     """
     try:
+        # Validate retention policy
+        allowed_policies = ["none", "72h", "permanent"]
+        if retention_policy not in allowed_policies:
+            retention_policy = "72h"
+        
+        # Calculate expiration date
+        created_at = datetime.now(timezone.utc)
+        if retention_policy == "none":
+            expires_at = created_at + timedelta(hours=1)
+        elif retention_policy == "72h":
+            expires_at = created_at + timedelta(hours=72)
+        else:  # permanent
+            expires_at = None
+        
         session = Session(
             title="Nueva Evaluación",
-            user_id=current_user.id
+            user_id=current_user.id,
+            retention_policy=retention_policy,
+            expires_at=expires_at
         )
         doc = session.model_dump()
         doc['created_at'] = doc['created_at'].isoformat()
         doc['updated_at'] = doc['updated_at'].isoformat()
+        if doc.get('expires_at'):
+            doc['expires_at'] = doc['expires_at'].isoformat()
         
         await db.sessions.insert_one(doc)
         
         log_security_event("SESSION_CREATED", {
             "session_id": session.id,
-            "user_id": current_user.id
+            "user_id": current_user.id,
+            "retention_policy": retention_policy,
+            "expires_at": expires_at.isoformat() if expires_at else None
         })
         return session
         
