@@ -853,7 +853,6 @@ NOTA LEGAL:
 Este informe ha sido generado mediante análisis de inteligencia artificial y constituye una evaluación orientativa. 
 Debe ser revisado y validado por un auditor certificado (CISA, CISSP, ISO 27001 LA) antes de uso oficial o toma de decisiones críticas.
 No constituye una certificación de cumplimiento ni asesoramiento legal vinculante."""
-- Responde en español profesional y claro"""
         
         # Initialize LLM Chat
         chat = LlmChat(
