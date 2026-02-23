@@ -387,17 +387,25 @@ REGLAS:
 
 # ==================== MAIN PIPELINE ====================
 
-async def run_analysis_pipeline(api_key, session_id, user_text, frameworks, file_contents):
+async def run_analysis_pipeline(api_key, session_id, user_text, frameworks, file_contents, task_id=None, db_ref=None):
     """
     Run the complete 3-stage analysis pipeline.
-    Returns dict with all pipeline results.
+    Optionally updates task progress in DB if task_id and db_ref are provided.
     """
     start = time.time()
     logger.info(f"[Pipeline] Starting for session {session_id}")
 
+    async def _update_task(stage, label, progress):
+        if task_id and db_ref:
+            await db_ref.analysis_tasks.update_one(
+                {"task_id": task_id},
+                {"$set": {"stage": stage, "stage_label": label, "progress": progress}}
+            )
+
     # STAGE 1
     t1 = time.time()
     logger.info("[Pipeline] Stage 1: Classification...")
+    await _update_task("stage1", "Etapa 1: Clasificando hallazgos...", 15)
     stage1_text, scores, findings = await stage1_classify(
         api_key, session_id, user_text, frameworks, file_contents
     )
@@ -407,6 +415,7 @@ async def run_analysis_pipeline(api_key, session_id, user_text, frameworks, file
     # STAGE 2
     t2 = time.time()
     logger.info(f"[Pipeline] Stage 2: Expanding {len(findings)} findings...")
+    await _update_task("stage2", f"Etapa 2: Expandiendo {len(findings)} hallazgos...", 40)
     expanded = await stage2_expand_all(api_key, findings, stage1_text, frameworks)
     t2_elapsed = time.time() - t2
     logger.info(f"[Pipeline] Stage 2 done: {len(expanded)} expanded ({t2_elapsed:.1f}s)")
@@ -414,6 +423,7 @@ async def run_analysis_pipeline(api_key, session_id, user_text, frameworks, file
     # STAGE 3
     t3 = time.time()
     logger.info("[Pipeline] Stage 3: Building executive report...")
+    await _update_task("stage3", "Etapa 3: Construyendo informe ejecutivo...", 75)
     report = await stage3_build_report(api_key, session_id, expanded, scores, frameworks)
     t3_elapsed = time.time() - t3
     logger.info(f"[Pipeline] Stage 3 done ({t3_elapsed:.1f}s)")
