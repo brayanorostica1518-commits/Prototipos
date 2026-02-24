@@ -1,48 +1,51 @@
 # SmartSecAssess - Product Requirements Document
 
 ## Overview
-AI-powered security assessment platform for compliance auditing against ISO 27001, NIST CSF, OWASP, and other frameworks. Features a 3-stage analysis pipeline with background processing and professional DOCX report generation.
+AI-powered security assessment platform for compliance auditing. Features 3-stage analysis pipeline, professional DOCX report generation with template management, and real-time progress tracking.
 
 ## Tech Stack
-- **Frontend:** React, Tailwind CSS, Recharts, jsPDF, jsPDF-AutoTable, html2canvas, Shadcn/UI
-- **Backend:** FastAPI (BackgroundTasks), Motor (MongoDB async), emergentintegrations (Gemini LLM), python-docx
+- **Frontend:** React, Tailwind CSS, Recharts, jsPDF, Shadcn/UI
+- **Backend:** FastAPI (BackgroundTasks), Motor (MongoDB), emergentintegrations (Gemini), python-docx, docxtpl
 - **Database:** MongoDB
 - **Auth:** Google OAuth 2.0 via Emergent Auth
 
 ## Architecture
-### 3-Stage Analysis Pipeline (Background)
-1. `POST /api/analyze` returns immediately with `task_id`
-2. Pipeline runs in background: Stage 1 (Classification) → Stage 2 (Per-finding expansion, parallel) → Stage 3 (Executive report)
-3. Frontend polls `GET /api/analyze/status/{task_id}` every 3s with real-time stage indicators
 
-### Professional Report Generator
-- `POST /api/reports/generate` accepts client_info + session_id, returns DOCX
-- Backend: `report_generator.py` renders Big4-style document with python-docx
-- Cover page, TOC, headers/footers, styled tables, Calibri font, formal margins
-- Each finding: normative context, non-conformity, technical analysis, CIA impact, risk evaluation, ISO 27002 recommendation, timeline, maturity level
+### 3-Stage Analysis Pipeline (Background)
+POST /api/analyze → task_id → polls /api/analyze/status/{id} → Stage1→2→3→done
+
+### Template-Based Report Generation
+1. User uploads DOCX/DOTX templates with Jinja2 placeholders
+2. On generate: if active template → docxtpl render; else → base template render
+3. Returns professional DOCX with cover, TOC, headers, styled tables, expanded findings
+
+## Key API Endpoints
+- POST /api/analyze → {task_id} (background)
+- GET /api/analyze/status/{task_id} → progress
+- POST /api/reports/generate → DOCX download
+- POST /api/report-templates/upload → upload template
+- GET /api/report-templates → list templates
+- POST /api/report-templates/{id}/activate
+- DELETE /api/report-templates/{id}
+- GET /api/report-templates/{id}/download
+- CRUD /api/sessions
 
 ## Key Files
 - `backend/analysis_pipeline.py` - 3-stage pipeline
-- `backend/report_generator.py` - DOCX report generator
-- `backend/server.py` - Main API
-- `frontend/src/pages/ReportGenerator.jsx` - Report generation UI
-- `frontend/src/pages/ChatInterface.jsx` - Chat UI with polling
+- `backend/template_manager.py` - Template CRUD + docxtpl rendering
+- `backend/report_generator.py` - Programmatic DOCX fallback
+- `backend/server.py` - All API endpoints
+- `frontend/src/pages/ReportGenerator.jsx` - Templates tab + Generate tab
+- `frontend/src/pages/ChatInterface.jsx` - Chat + polling
 - `frontend/src/pages/Dashboard.jsx` - Dashboard + expanded findings
 
-## Key API Endpoints
-- POST /api/analyze → {task_id} (background pipeline)
-- GET /api/analyze/status/{task_id} → {status, stage, progress}
-- POST /api/reports/generate → DOCX file download
-- POST/GET/PATCH/DELETE /api/sessions
-- GET /api/sessions/{id}/analysis → expanded_findings, pipeline_metadata
-
 ## Completed (Feb 2026)
-- [x] Google OAuth 2.0 authentication
-- [x] 3-Stage Analysis Pipeline (background task + polling)
-- [x] Professional DOCX Report Generator (Big4 style)
-- [x] Expanded findings display on Dashboard
+- [x] Google OAuth 2.0
+- [x] 3-Stage Analysis Pipeline (background + polling)
+- [x] Template management (upload/activate/delete/download)
+- [x] Professional DOCX with docxtpl (template or base)
+- [x] Enhanced form (name, unit, evaluator, date, version, classification, systems, logo)
 - [x] Session management (create/rename/delete)
-- [x] Template library, onboarding tour
 - [x] Navy-blue cybersecurity theme, mobile responsive
 
 ## Pending
