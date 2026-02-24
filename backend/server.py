@@ -1246,9 +1246,9 @@ async def generate_report(
 
 # ==================== TEMPLATE MANAGEMENT ====================
 
-@api_router.post("/templates/upload")
+@api_router.post("/report-templates/upload")
 @limiter.limit("5/minute")
-async def upload_template(
+async def upload_report_template(
     request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user)
