@@ -65,6 +65,11 @@ from prompt_templates import (
 # Import analysis pipeline
 from analysis_pipeline import run_analysis_pipeline
 from report_generator import generate_report_docx
+from template_manager import (
+    TEMPLATES_DIR, validate_template_file, compute_checksum,
+    render_base_report, render_custom_report, prepare_template_context,
+    create_base_template, BASE_TEMPLATE_PATH
+)
 
 # Import ISO controls database
 from iso_controls import get_all_framework_controls_for_prompt
