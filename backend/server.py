@@ -1312,13 +1312,13 @@ async def upload_report_template(
         raise HTTPException(status_code=500, detail=f"Error al cargar plantilla: {str(e)}")
 
 
-@api_router.get("/templates")
+@api_router.get("/report-templates")
 @limiter.limit("30/minute")
-async def list_templates(
+async def list_report_templates(
     request: Request,
     current_user: User = Depends(get_current_user)
 ):
-    """List user's uploaded templates."""
+    """List user's uploaded report templates."""
     templates = await db.report_templates.find(
         {"user_id": current_user.id},
         {"_id": 0}
