@@ -79,7 +79,7 @@ export default function ReportGenerator() {
 
   const loadTemplates = async () => {
     try {
-      const r = await secureAxios.get("/templates");
+      const r = await secureAxios.get("/report-templates");
       setTemplates(r.data);
     } catch { /* ignore */ }
   };
@@ -111,7 +111,7 @@ export default function ReportGenerator() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      await secureAxios.post("/templates/upload", formData, {
+      await secureAxios.post("/report-templates/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
       toast.success("Plantilla cargada");
@@ -126,7 +126,7 @@ export default function ReportGenerator() {
 
   const activateTemplate = async (id) => {
     try {
-      await secureAxios.post(`/templates/${id}/activate`);
+      await secureAxios.post(`/report-templates/${id}/activate`);
       toast.success("Plantilla activada");
       loadTemplates();
     } catch { toast.error("Error al activar"); }
@@ -134,7 +134,7 @@ export default function ReportGenerator() {
 
   const deleteTemplate = async (id) => {
     try {
-      await secureAxios.delete(`/templates/${id}`);
+      await secureAxios.delete(`/report-templates/${id}`);
       toast.success("Plantilla eliminada");
       loadTemplates();
     } catch { toast.error("Error al eliminar"); }
@@ -142,7 +142,7 @@ export default function ReportGenerator() {
 
   const downloadTemplate = async (id, name) => {
     try {
-      const r = await secureAxios.get(`/templates/${id}/download`, { responseType: "blob" });
+      const r = await secureAxios.get(`/report-templates/${id}/download`, { responseType: "blob" });
       const url = window.URL.createObjectURL(new Blob([r.data]));
       const a = document.createElement("a");
       a.href = url;
