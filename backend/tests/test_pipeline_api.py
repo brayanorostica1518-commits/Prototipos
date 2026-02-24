@@ -17,7 +17,7 @@ import time
 # Get BASE_URL from environment
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://compliance-audit-ai-1.preview.emergentagent.com"
+    BASE_URL = "https://auditor-ai-lab.preview.emergentagent.com"
 
 # Test credentials created for pipeline testing
 SESSION_TOKEN = "test_pipeline_1771869211856"
@@ -261,7 +261,7 @@ class TestCORSMethods:
         response = requests.options(
             f"{BASE_URL}/api/sessions",
             headers={
-                "Origin": "https://compliance-audit-ai-1.preview.emergentagent.com",
+                "Origin": "https://auditor-ai-lab.preview.emergentagent.com",
                 "Access-Control-Request-Method": "GET"
             }
         )
@@ -274,7 +274,7 @@ class TestCORSMethods:
         response = requests.options(
             f"{BASE_URL}/api/analyze",
             headers={
-                "Origin": "https://compliance-audit-ai-1.preview.emergentagent.com",
+                "Origin": "https://auditor-ai-lab.preview.emergentagent.com",
                 "Access-Control-Request-Method": "POST"
             }
         )
@@ -287,7 +287,7 @@ class TestCORSMethods:
         response = requests.options(
             f"{BASE_URL}/api/sessions/test",
             headers={
-                "Origin": "https://compliance-audit-ai-1.preview.emergentagent.com",
+                "Origin": "https://auditor-ai-lab.preview.emergentagent.com",
                 "Access-Control-Request-Method": "PATCH"
             }
         )
@@ -300,7 +300,7 @@ class TestCORSMethods:
         response = requests.options(
             f"{BASE_URL}/api/sessions/test",
             headers={
-                "Origin": "https://compliance-audit-ai-1.preview.emergentagent.com",
+                "Origin": "https://auditor-ai-lab.preview.emergentagent.com",
                 "Access-Control-Request-Method": "DELETE"
             }
         )

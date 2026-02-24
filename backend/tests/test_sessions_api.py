@@ -15,7 +15,7 @@ import time
 # Get BASE_URL from environment (no default - fail fast if not set)
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://compliance-audit-ai-1.preview.emergentagent.com"
+    BASE_URL = "https://auditor-ai-lab.preview.emergentagent.com"
 
 # Test credentials from MongoDB setup
 SESSION_TOKEN = "test_session_1771867839122"
@@ -62,7 +62,7 @@ class TestCORS:
         response = requests.options(
             f"{BASE_URL}/api/sessions/test-id",
             headers={
-                "Origin": "https://compliance-audit-ai-1.preview.emergentagent.com",
+                "Origin": "https://auditor-ai-lab.preview.emergentagent.com",
                 "Access-Control-Request-Method": "DELETE"
             }
         )
@@ -77,7 +77,7 @@ class TestCORS:
         response = requests.options(
             f"{BASE_URL}/api/sessions/test-id",
             headers={
-                "Origin": "https://compliance-audit-ai-1.preview.emergentagent.com",
+                "Origin": "https://auditor-ai-lab.preview.emergentagent.com",
                 "Access-Control-Request-Method": "PATCH"
             }
         )

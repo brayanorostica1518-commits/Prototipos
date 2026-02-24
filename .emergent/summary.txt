@@ -1,215 +1,295 @@
 <analysis>**original_problem_statement:**
-The user initially requested UI bug fixes and has progressively expanded the scope to a full-featured AI assessment platform named SmartSecAssess.
+The user initially requested UI bug fixes, which evolved into building a full-featured AI assessment platform, SmartSecAssess.
 
-The core requirements implemented and requested are:
-1.  **Full User Authentication:** Implement Google OAuth 2.0 to ensure user data isolation.
-2.  **Custom Report Generation:** Create a Report Generator page with visualizations.
-3.  **Professional AI Analysis:** Enhance AI recommendations to be based on ISO 27001 and generate professional, detailed audit-style reports.
-4.  **UI/UX Overhaul:** Fix UI bugs, implement a new professional cybersecurity color theme (navy blue), and ensure the entire application is responsive, especially on mobile devices.
-5.  **Session Management:** Add features to rename and delete chat sessions.
-6.  **Data Retention Policy:** Implement a configurable system to automatically delete session data after a set period (e.g., 72 hours) for privacy.
-7.  **Security Enhancements:** Force HTTPS, add comprehensive security headers (HSTS, CSP), and ensure all communications are encrypted.
-8.  **Onboarding:** Create a mini-tutorial for new users to understand the app's functionality.
-9.  **Documentation:** Generate a complete  and a  with detailed local setup instructions.
-10. **Bug Fixing:** Address numerous bugs reported by the user, including UI loops, analysis errors, duplicate session creation, and broken components.
+**PRODUCT REQUIREMENTS:**
+1.  **Full User Authentication:** Implement Google OAuth 2.0 for user data isolation.
+2.  **Professional AI Analysis & Report Generation:**
+    *   The AI must act as a Lead ISO 27001 Auditor.
+    *   Implement a 3-stage analysis pipeline: 1. Initial classification, 2. Detailed expansion of each finding, 3. Consolidated report assembly.
+    *   The analysis must produce a structured JSON output with detailed fields for each finding (normative control, evidence, description, CIA impact, risk evaluation, recommendation, etc.).
+    *   The system must generate professional, editable DOCX reports (not simple PDFs) ready for executive review, using a Big4-style format.
+3.  **Custom Report Templates:**
+    *   Allow users (Admin/Lead Auditor) to upload, manage (activate, delete, download), and use their own corporate DOCX/DOTX templates.
+    *   When generating a report, the system must use the active custom template if one exists, filling it with the assessment data using placeholders (Jinja2 syntax).
+    *   If no custom template is active, the system must fall back to a built-in, professionally designed base template.
+4.  **UI/UX Overhaul & Onboarding:**
+    *   Fix all UI bugs and implement a professional cybersecurity navy-blue color theme.
+    *   Ensure the application is fully responsive, especially on mobile.
+    *   Create a mini-tutorial (onboarding tour) for new users.
+5.  **Session Management:** Allow users to rename and delete chat sessions.
+6.  **Data Retention Policy:** Implement a configurable system to automatically delete old session data.
+7.  **Security Enhancements:** Force HTTPS and add comprehensive security headers (HSTS, CSP).
+8.  **Documentation:** Generate a complete  and a  with setup instructions.
 
 **User's preferred language**: Spanish
 
 **what currently exists?**
-The application is a full-stack AI-powered assessment tool named SmartSecAssess with a React frontend and FastAPI backend. It features a complete Google OAuth 2.0 authentication system for user data isolation. The UI has been significantly improved with a new navy-blue color scheme, a fully responsive layout for mobile, and a new interactive onboarding tour. The session management now allows users to rename and delete sessions. The backend has been enhanced to produce more detailed, professional-grade analysis reports. A data retention policy feature has been partially implemented. The application's branding has been updated, and legal pages (Terms of Service, Privacy Policy) have been created and linked.
+The SmartSecAssess application is a full-stack platform with a React frontend and FastAPI backend using MongoDB. Key features include:
+-   **Google OAuth 2.0 Authentication:** Secure user login and data isolation.
+-   **Advanced Analysis Pipeline:** A 3-stage, long-running analysis process was implemented as a background task to avoid proxy timeouts. The frontend polls for real-time progress updates. This pipeline generates deeply detailed, structured findings based on user inputs.
+-   **Professional Report Generation:** A complete report generation module has been built. It uses  and  to create high-quality, editable DOCX files.
+-   **Report Template Management:** A full CRUD system for user-uploaded report templates is in place. The report generator conditionally uses an active user template or a default internal template, filling it with assessment data.
+-   **UI:** The application features a responsive, navy-blue themed UI with a new  page that includes a multi-tab interface for report generation and template management.
 
 **Last working item**:
-- **Last item agent was working:** The user reported that creating a new session still results in two identical sessions being created automatically. The agent was investigating the root cause, suspecting it might be related to React 18's StrictMode (which runs  twice in development) or multiple function calls within the component.
-- **Status:** IN PROGRESS
-- **Agent Testing Done:** N
-- **Which testing method agent to use?** Frontend testing agent to simulate user flow for session creation and verify that only one session is created. Backend logs should also be checked for duplicate API calls.
-- **User Testing Done:** N
+-   **Last item agent was working:** The user reported a generic connection error () immediately after the new report template feature was deployed and verified by the testing agent. The agent started investigating by checking the backend error logs, which were empty, indicating no server crash.
+-   **Status:** IN PROGRESS
+-   **Agent Testing Done:** N
+-   **Which testing method agent to use?** Manual testing. The agent needs to reproduce the user's workflow while monitoring both frontend (browser console) and backend ( and ) logs simultaneously to pinpoint the source of the connection error.  can then be used to isolate faulty API endpoints.
+-   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-- **Issue 1: Duplicate Session Creation on Mobile (P0)**
-  - **Description:** When a user creates a new session, two identical sessions appear in the session list. This is the most critical issue.
-  - **Attempted fixes:** The agent previously tried to fix this by adding a  state and debouncing, but the issue persists. The  hook that loads and creates sessions is the primary suspect.
-  - **Next debug checklist:**
-    - Review  in . The effect runs  and  on mount. This logic needs to be corrected to only create a session on explicit user action (e.g., clicking New Session) or only if no active session exists.
-    - Investigate if React 18 StrictMode is the cause by logging calls in development. If so, the  logic must be made idempotent.
-    - Ensure the  function is not being called from multiple places on component mount.
-  - **Why fix this issue and what will be achieved with the fix?** This is a core functionality bug that confuses the user and clutters the interface. Fixing it will provide a stable and predictable user experience.
-  - **Status:** IN PROGRESS
-  - **Is recurring issue?** Y
-  - **Should Test frontend/backend/both after fix?** Frontend
-  - **Blocked on other issue:** None
+-   **Issue 1: Da error de conexion (Connection Error) (P0)**
+    -   **Description:** The user is experiencing a connection error, preventing them from using the application. This occurred right after the implementation of the report template feature.
+    -   **Attempted fixes:** The agent checked  and found no new errors.
+    -   **Next debug checklist:**
+        1.  Check INFO:     10.64.135.153:40492 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.132.71:52100 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     10.64.132.71:56262 - "GET /api/sessions/4ccf1218-827b-41cf-9633-d600f8658996/messages HTTP/1.1" 200 OK
+INFO:     10.64.135.153:35788 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     10.64.132.71:56262 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     10.64.132.71:46334 - "GET /api/sessions/4ccf1218-827b-41cf-9633-d600f8658996/analysis HTTP/1.1" 200 OK
+INFO:     10.64.135.153:54972 - "POST /api/reports/generate HTTP/1.1" 200 OK
+INFO:     10.64.132.71:58996 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.135.153:60056 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.132.71:39348 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.129.74:41310 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49056 - "GET /api/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49058 - "GET /api/templates HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49064 - "POST /api/templates/upload HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:49066 - "GET /api/templates/test123/download HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:45234 - "GET /api/report-templates HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:45238 - "POST /api/report-templates/upload HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:45242 - "POST /api/report-templates/test123/activate HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:45246 - "DELETE /api/report-templates/test123 HTTP/1.1" 401 Unauthorized
+INFO:     10.64.132.71:57030 - "GET /api/ HTTP/1.1" 200 OK
+INFO:     10.64.132.71:57488 - "GET /api/ HTTP/1.1" 200 OK
+INFO:     10.64.132.71:57488 - "GET /api/templates HTTP/1.1" 200 OK
+INFO:     10.64.132.71:57488 - "GET /api/report-templates HTTP/1.1" 200 OK
+INFO:     10.64.129.74:41040 - "GET /api/report-templates HTTP/1.1" 401 Unauthorized
+INFO:     10.64.132.71:57488 - "POST /api/report-templates/upload HTTP/1.1" 401 Unauthorized
+INFO:     10.64.129.74:41040 - "POST /api/report-templates/upload HTTP/1.1" 200 OK
+INFO:     10.64.129.74:41040 - "POST /api/report-templates/upload HTTP/1.1" 400 Bad Request
+INFO:     10.64.129.74:41040 - "GET /api/report-templates HTTP/1.1" 200 OK
+INFO:     10.64.129.74:41040 - "POST /api/report-templates/69a0638a-5286-4dd7-bd1c-f30d58bcc673/activate HTTP/1.1" 200 OK
+INFO:     10.64.129.74:41040 - "GET /api/report-templates HTTP/1.1" 200 OK
+INFO:     10.64.132.71:57488 - "POST /api/report-templates/nonexistent-id/activate HTTP/1.1" 404 Not Found
+INFO:     10.64.132.71:57488 - "GET /api/report-templates/69a0638a-5286-4dd7-bd1c-f30d58bcc673/download HTTP/1.1" 200 OK
+INFO:     10.64.132.71:57488 - "GET /api/report-templates/nonexistent-id/download HTTP/1.1" 404 Not Found
+INFO:     10.64.129.74:41040 - "POST /api/reports/generate HTTP/1.1" 403 Forbidden
+INFO:     10.64.132.71:57488 - "POST /api/reports/generate HTTP/1.1" 401 Unauthorized
+INFO:     10.64.132.71:57488 - "POST /api/reports/generate HTTP/1.1" 400 Bad Request
+INFO:     10.64.129.74:41040 - "DELETE /api/report-templates/69a0638a-5286-4dd7-bd1c-f30d58bcc673 HTTP/1.1" 200 OK
+INFO:     10.64.129.74:41040 - "GET /api/report-templates HTTP/1.1" 200 OK
+INFO:     10.64.129.74:41040 - "DELETE /api/report-templates/nonexistent-id HTTP/1.1" 404 Not Found
+INFO:     10.64.129.74:41040 - "GET /api/report-templates HTTP/1.1" 200 OK
+INFO:     10.64.129.74:41040 - "POST /api/reports/generate HTTP/1.1" 403 Forbidden
+INFO:     10.64.129.74:32986 - "POST /api/reports/generate HTTP/1.1" 200 OK
+INFO:     10.64.129.74:32986 - "POST /api/reports/generate HTTP/1.1" 401 Unauthorized
+INFO:     10.64.132.71:49652 - "POST /api/reports/generate HTTP/1.1" 400 Bad Request
+INFO:     10.64.132.71:49652 - "GET /api/ HTTP/1.1" 200 OK
+INFO:     10.64.129.74:32986 - "GET /api/templates HTTP/1.1" 200 OK
+INFO:     10.64.132.71:49652 - "GET /api/report-templates HTTP/1.1" 200 OK
+INFO:     10.64.129.74:32986 - "GET /api/report-templates HTTP/1.1" 401 Unauthorized
+INFO:     10.64.129.74:32986 - "POST /api/report-templates/upload HTTP/1.1" 401 Unauthorized
+INFO:     10.64.129.74:32986 - "POST /api/report-templates/upload HTTP/1.1" 200 OK
+INFO:     10.64.129.74:32986 - "POST /api/report-templates/upload HTTP/1.1" 400 Bad Request
+INFO:     10.64.129.74:32986 - "GET /api/report-templates HTTP/1.1" 200 OK
+INFO:     10.64.132.71:49652 - "POST /api/report-templates/0b4cb6f2-5edd-44f2-b936-5bb095492b92/activate HTTP/1.1" 200 OK
+INFO:     10.64.132.71:49652 - "GET /api/report-templates HTTP/1.1" 200 OK
+INFO:     10.64.132.71:49652 - "POST /api/report-templates/nonexistent-id/activate HTTP/1.1" 404 Not Found
+INFO:     10.64.132.71:49652 - "GET /api/report-templates/0b4cb6f2-5edd-44f2-b936-5bb095492b92/download HTTP/1.1" 200 OK
+INFO:     10.64.129.74:32986 - "GET /api/report-templates/nonexistent-id/download HTTP/1.1" 404 Not Found
+INFO:     10.64.129.74:32986 - "POST /api/reports/generate HTTP/1.1" 200 OK
+INFO:     10.64.129.74:32986 - "POST /api/reports/generate HTTP/1.1" 401 Unauthorized
+INFO:     10.64.132.71:49652 - "POST /api/reports/generate HTTP/1.1" 400 Bad Request
+INFO:     10.64.129.74:32986 - "DELETE /api/report-templates/0b4cb6f2-5edd-44f2-b936-5bb095492b92 HTTP/1.1" 200 OK
+INFO:     10.64.132.71:49652 - "GET /api/report-templates HTTP/1.1" 200 OK
+INFO:     10.64.129.74:32986 - "DELETE /api/report-templates/nonexistent-id HTTP/1.1" 404 Not Found
+INFO:     10.64.132.71:49652 - "GET /api/report-templates HTTP/1.1" 200 OK
+INFO:     10.64.132.71:49652 - "POST /api/reports/generate HTTP/1.1" 200 OK
+INFO:     10.64.129.74:40686 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.132.71:49954 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.132.71:38960 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.132.71:38960 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.132.71:38966 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.129.74:34404 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.132.71:44568 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.129.74:47066 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.129.74:47066 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.132.71:45490 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.129.74:47066 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.129.74:47066 - "GET /api/report-templates HTTP/1.1" 200 OK
+INFO:     10.64.129.74:47066 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     10.64.132.71:45490 - "GET /api/report-templates HTTP/1.1" 200 OK
+INFO:     10.64.129.74:47066 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     10.64.132.71:35376 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.129.74:46810 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.129.74:46810 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.129.74:46810 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.129.74:46810 - "GET /api/report-templates HTTP/1.1" 200 OK
+INFO:     10.64.129.74:46810 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     10.64.132.71:35376 - "GET /api/report-templates HTTP/1.1" 200 OK
+INFO:     10.64.129.74:46810 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     10.64.132.71:51606 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.132.71:51606 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.129.74:58994 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.129.74:58994 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.129.74:58994 - "GET /api/report-templates HTTP/1.1" 200 OK
+INFO:     10.64.129.74:59010 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     10.64.132.71:51606 - "GET /api/report-templates HTTP/1.1" 200 OK
+INFO:     10.64.129.74:59010 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     10.64.132.71:51606 - "GET /api/sessions/06396466-b614-4938-bfa8-b7fe45769191/analysis HTTP/1.1" 200 OK
+INFO:     10.64.129.74:45750 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.129.74:45750 - "GET /api/auth/check HTTP/1.1" 200 OK
+INFO:     10.64.129.74:60716 - "GET /api/auth/check HTTP/1.1" 200 OK for application-level tracebacks or runtime errors that are not fatal crashes.
+        2.  Instruct the agent to analyze browser developer tools (network tab, console) for failed requests or JavaScript errors on the frontend. The error could be client-side.
+        3.  Use  to systematically test all critical API endpoints required for the main workflow (login, session list, analysis, report generation) to isolate the failure point.
+    -   **Why fix this issue and what will be achieved with the fix?** This is a critical, app-breaking bug. Fixing it will restore core functionality to the user.
+    -   **Status:** IN PROGRESS
+    -   **Is recurring issue?** N
+    -   **Should Test frontend/backend/both after fix?** Both
+    -   **Blocked on other issue:** None
 
-- **Issue 2: Incomplete PDF Report Generation (P1)**
-  - **Description:** The user is dissatisfied with the generated PDF report, stating it is too basic (only 5 pages) and lacks professional detail.
-  - **Attempted fixes:** The agent completely replaced the  function in  with a more complex version intended to generate a detailed, multi-section report.
-  - **Next debug checklist:**
-    - The new implementation has not been tested or verified by the user.
-    - Ask the user to generate a report for a completed analysis and provide feedback.
-    - If it's still insufficient, the prompt enhancement in  and the PDF generation logic in  need to be reviewed and improved together to ensure all detailed sections (Executive Summary, Technical Findings, Risk, etc.) are included in the final PDF.
-  - **Why fix this issue and what will be achieved with the fix?** Report generation is a key value proposition. A detailed, professional report is essential for the product to be useful.
-  - **Status:** USER VERIFICATION PENDING
-  - **Is recurring issue?** Y
-  - **Should Test frontend/backend/both after fix?** Frontend (user flow)
-  - **Blocked on other issue:** None
-
-- **Issue 3: Radar Chart Shows Only One Dimension (P2)**
-  - **Description:** The multidimensional analysis radar chart on the dashboard only displays a single data point for ISO 27001, instead of comparing multiple frameworks.
-  - **Attempted fixes:** The agent identified that the data transformation logic in  seems correct, suggesting the issue might be that the AI analysis is only returning scores for one framework.
-  - **Next debug checklist:**
-    - Verify the AI response structure for a recent analysis in the  collection in MongoDB. Check if the  field contains data for multiple frameworks.
-    - If not, review the system prompt in  to ensure it explicitly requests analysis against *multiple* relevant frameworks.
-    - If the data is present, debug the  mapping logic in .
-  - **Why fix this issue and what will be achieved with the fix?** The chart is meant to provide a quick visual comparison of compliance across different standards. Fixing it is crucial for the dashboard's effectiveness.
-  - **Status:** IN PROGRESS
-  - **Is recurring issue?** Y
-  - **Should Test frontend/backend/both after fix?** Both
-  - **Blocked on other issue:** None
+-   **Issue 2: Radar Chart Shows Only One Dimension (P2)**
+    -   **Description:** The dashboard's radar chart only displays a single data point for ISO 27001 instead of comparing multiple security frameworks.
+    -   **Next debug checklist:**
+        1.  Verify the AI response structure in the  collection in MongoDB to see if scores for multiple frameworks are being returned.
+        2.  If not, review the system prompt in  to ensure it requests a multi-framework analysis.
+        3.  If the data is present, debug the  mapping logic in .
+    -   **Why fix this issue and what will be achieved with the fix?** This chart is a key visual for compliance comparison on the dashboard. Fixing it is necessary for the dashboard to be effective.
+    -   **Status:** NOT STARTED
+    -   **Is recurring issue?** Y
+    -   **Should Test frontend/backend/both after fix?** Both
+    -   **Blocked on other issue:** None
 
 **In progress Task List**:
-- **Task 1: Complete Data Retention & Privacy Feature (P1)**
-  - **Where to resume:** The agent has added the  field to the  model and created a  file. The work is incomplete.
-  - **Next steps:**
-    1.  Implement a scheduler (like  in FastAPI or a cron job) that periodically runs the  function from .
-    2.  Integrate and run this scheduler within the FastAPI application lifecycle ( event in ).
-    3.  Implement a middleware or decorator to validate session expiration () on all critical endpoints that access session data (e.g., , ), not just one.
-  - **What will be achieved with this?** A fully automated, compliant data retention system that meets the user's privacy requirements.
-  - **Status:** IN PROGRESS
-  - **Should Test frontend/backend/both after fix?** Backend
-  - **Blocked on something:** None
+-   **Task 1: Complete Data Retention & Privacy Feature (P1)**
+    -   **Where to resume:** The  file exists but is not integrated.
+    -   **Next steps:**
+        1.  Integrate and configure  in  to run the  function periodically.
+        2.  Implement middleware to enforce session expiration on API endpoints.
+    -   **What will be achieved with this?** A fully automated data retention system meeting user privacy requirements.
+    -   **Status:** NOT STARTED
+    -   **Should Test frontend/backend/both after fix?** Backend
+    -   **Blocked on something:** None
 
 **Upcoming and Future Tasks**
-- **Upcoming Tasks:**
-  - **(P1) Complete Security Hardening:** Review and implement all required security headers as requested (HSTS), and configure forced HTTP to HTTPS redirection. This is critical for production readiness.
-  - **(P2) Review and Finalize Documentation:** Thoroughly review the  to ensure it contains all necessary steps and examples for local setup as per the user's detailed request.
-- **Future Tasks:**
-  - **(P2) Backend Architecture Refactoring:** As requested by the user, refactor the backend () into logical modules (e.g., , , , ) to improve scalability and maintainability.
-  - **(P3) Frontend Component Refactoring:** The  component has become a monolith. It should be broken down into smaller, manageable components (e.g., , , ).
+-   **Upcoming Tasks:**
+    -   **(P1) Complete Security Hardening:** Implement forced HTTP to HTTPS redirection and review HSTS/CSP headers in .
+    -   **(P2) Finalize Documentation:** Review and complete the  with detailed local setup instructions.
+-   **Future Tasks:**
+    -   **(P2) Backend Architecture Refactoring:** Refactor  into a more modular structure as requested (e.g., separate routers for auth, sessions, reports).
+    -   **(P3) Frontend Component Refactoring:** Break down the monolithic  into smaller, reusable components.
 
 **Completed work in this session**
-- **UI/UX Overhaul:**
-  - Implemented a new professional navy-blue color theme via CSS variables in .
-  - Made the  fully responsive for mobile, including a collapsible sidebar.
-  - Redesigned the  page to have a clean, vertical, single-column layout.
-- **Feature: Onboarding Tour:**
-  - Created and integrated a new  component that provides a step-by-step guide for new users.
-- **Feature: Session Management:**
-  - Implemented functionality to rename and delete sessions in .
-  - Added corresponding backend endpoints:  and  in .
-- **Feature: Branding & Legal:**
-  - Renamed the application to SmartSecAssess in all relevant UI files.
-  - Created  and  and linked them in a new  component.
-- **Critical Bug Fixes:**
-  - **Backend Crash:** Fixed a  in  caused by an unterminated string in the AI prompt, which was preventing login.
-  - **Obstructing UI Element:** Hid the Made with Emergent badge on mobile, as it was blocking the text input area.
-  - **Session Panel Visibility:** Corrected the logic in  to ensure the session list is visible by default on desktop.
-- **Prompt Engineering:**
-  - Greatly improved the system prompt in  to instruct the LLM to generate more detailed, professional audit-style reports.
-- **Documentation:**
-  - Generated initial versions of  and a clean .
+-   **Bug Fix: Duplicate Session Creation:** Resolved the long-standing bug by using  in  to make the session loading effect idempotent against React 18's StrictMode.
+-   **Bug Fix: Analysis Timeout Error:** Re-architected the long-running analysis process into a background task with frontend polling. This fixed proxy timeout errors and provides a better user experience with real-time progress updates.
+-   **Bug Fix: Analysis Logic Error:** Fixed a Python type error () in  that was crashing the background analysis task.
+-   **Feature: Professional Report Generation (DOCX):** Implemented a new system to generate high-quality, editable DOCX reports. This includes a new backend module () and a completely redesigned frontend page ().
+-   **Feature: Report Template Management:** Built a full CRUD feature for users to upload and manage their own DOCX report templates. The backend uses  to populate user templates with assessment data. This included new API endpoints and a Templates tab in the UI.
+-   **API Fixes:** Corrected CORS policies to allow  and  methods and fixed an endpoint to correctly parse a JSON body.
 
 **Earlier issues found/mentioned but not fixed**
-None that are not already in the pending list.
+-   **Issue 1: Radar Chart Shows Only One Dimension:** This was identified in a previous session and remains unresolved.
 
 **Known issue recurrence from previous fork**
-- The project has a history of regressions and new bugs appearing after major refactoring (e.g., adding authentication, redesigning the UI). The current Duplicate Session Creation bug is another example. The next agent must prioritize comprehensive testing after each change.
+-   The project has a history of regressions appearing after major feature implementations. The current connection error bug, which surfaced after the report template feature was added, follows this pattern. This highlights the need for careful, incremental testing.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- Full-Stack: React (frontend), FastAPI (backend)
-- Database: MongoDB
-- Authentication: Google OAuth 2.0, JWTs
-- UI/UX: Tailwind CSS, Responsive Design, CSS Variables
-- State Management: React Hooks (, ), React Context
-- Backend Libraries: , , ,  (to be added)
-- Frontend Libraries: , , , 
+-   **Full-Stack:** React, FastAPI, MongoDB
+-   **Authentication:** Google OAuth 2.0, JWTs
+-   **Async Operations:** FastAPI  with a client-side polling mechanism to handle long-running LLM processes.
+-   **Document Generation:**  for creating DOCX files and  for templating with Jinja2 syntax.
+-   **UI/UX:** Tailwind CSS, Responsive Design.
+-   **State Management:** React Hooks (, , ), React Context.
 
 **key DB schema**
-- ** collection**:
-  - uid=0(root) gid=0(root) groups=0(root) (string, UUID)
-  -  (string)
-  -  (string)
-  - ,  (datetime)
-  -  (datetime, nullable) - **New**
-  -  (string, e.g., 72h, never) - **New**
-- ** collection**: (Unchanged)
-- ** collection**: (Unchanged)
+-   ****: Stores user chat session metadata.
+-   ****: Stores results from the AI pipeline, now includes  and .
+-   ****: Stores user profile information from Google OAuth.
+-   **** (New):
+    -   uid=0(root) gid=0(root) groups=0(root), , , , , ,  (boolean), 
 
 **changes in tech stack**
-- No new libraries were installed in this session, but  is planned for the data retention task.
+-   **Added:** ,  () for professional report generation.
 
 **All files of reference**
-- **Heavily Modified:**
-  - : The main hub of recent changes, including responsive UI, session management (rename/delete), onboarding integration, and bug fixes.
-  - : Added new endpoints for session management, partially implemented data retention logic, and significantly improved the AI analysis prompt.
-  - : Completely redesigned for a vertical layout and updated branding.
-  - : Overhauled with a new navy-blue color palette and responsive utility classes.
-  - : The PDF generation logic was completely replaced.
-- **Newly Created:**
-  - : The interactive tutorial.
-  - : The footer with legal links.
-  - : Stubbed out for the data cleanup task.
-  - , : Legal pages.
-  - , , 
+-   **Heavily Modified/New:**
+    -   : Major changes to support background tasks, report generation, and the new template management API.
+    -   : New module containing the 3-stage analysis logic.
+    -   : New module for DOCX creation.
+    -   : New, comprehensive UI for generating reports and managing templates.
+    -   : Modified to implement polling for the analysis background task.
+    -   : Updated to display the richer data from .
+    -   : New internal template file.
 
 **Areas that need refactoring**:
-- ****: This component is now over 600 lines and manages state for sessions, chat, modals, and onboarding. It urgently needs to be broken down into smaller, specialized components to improve maintainability.
-- ****: The user has explicitly requested architectural refactoring to separate concerns into distinct modules. This is a major upcoming task.
+-   ****: Remains a large, complex component that should be broken down.
+-   ****: Has grown significantly and would benefit from being split into multiple routers/modules for better organization.
 
 **key api endpoints**
-- **Existing/Modified:**
-  - : Modified to handle retention policies.
-  - : Fetches all sessions for the authenticated user.
-- **New:**
-  - : Updates a session's title.
-  - : Deletes a session and its related data.
+-   **Analysis:**
+    -   : Initiates a background analysis task, returns a .
+    -   : Polls for analysis progress and results.
+-   **Report Generation:**
+    -   : Creates and returns a DOCX report based on an analysis.
+-   **Report Templates:**
+    -   : Uploads a / template.
+    -   : Lists all uploaded templates for the user.
+    -   : Sets a template as active.
+    -   : Deletes a template.
+    -   : Downloads a template file.
 
 **Critical Info for New Agent**
-- **React 18 StrictMode:** Be aware that  hooks with empty dependency arrays will run twice in the development environment. This is the likely cause of the duplicate session creation bug. Any logic in these hooks must be idempotent (safe to run multiple times).
-- **Component Monolith:**  is overly complex. When fixing bugs or adding features there, consider refactoring parts of it into smaller components first.
-- **User-Driven Development:** The user provides very detailed, multi-part requirements. It is crucial to break down these requests into phases, implement them one by one, and confirm with the user after each significant step.
+-   **Top Priority is the Connection Error:** The application is currently unusable for the user. The immediate task is to debug the Da error de conexion issue. This is likely a runtime bug, so check application logs () and browser console errors, not just crash logs.
+-   **Async Analysis Flow:** Be aware that the core analysis function is now a background task. The frontend initiates it, gets a task ID, and then polls a status endpoint. Do not expect the  endpoint to return the full analysis directly.
+-   **Conditional Report Generation:** The report generation logic in  checks for an active user template. If found, it uses  to fill it. If not, it uses  to build a report from the internal .
 
 **documents and test reports created in this job**
-- /app/ONBOARDING_GUIDE.md
-- /app/MOBILE_FIXES_SUMMARY.md
-- /app/SESIONES_Y_GRAFICOS_FIX.md
-- /app/IMPLEMENTACION_COMPLETA.md
-- /app/MEJORAS_FINALES_RESUMEN.md
-- /app/README.md
+-   /app/memory/PRD.md
+-   /app/test_reports/iteration_1.json
+-   /app/test_reports/iteration_2.json
+-   /app/test_reports/iteration_3.json
+-   /app/test_reports/iteration_4.json
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **Se crean 2 sesiones automáticamente**: User reports duplicate session creation. **(IN PROGRESS)**
-2.  **Esta duplicando sesiones, no deja eliminarlas...**: User reports multiple critical issues: duplicate sessions, inability to delete/rename, and a basic PDF report. **(Partially Addressed - Rename/Delete added, PDF fix is pending verification)**
-3.  **No deja iniciar sesión, arroja el mensaje Ha ocurrido un error**: User reports a login failure. **(Resolved - Caused by a backend syntax error)**
-4.  **Continua y termina todo lo pendiente**: User gives go-ahead to complete all remaining tasks. **(Acknowledged)**
-5.  **Tenemos que hacer un texto de términos de servicio...**: User requests legal pages, fixing the invisible session panel on desktop, and updating the app name. **(Completed)**
-6.  **El login de la pagina esta corrido, quiero que todo sea en orden vertical**: User requests a vertical layout for the login page. **(Completed)**
-7.  **Multi-part Feature Request**: User provides a very long list of new requirements including data retention, security hardening, improved reports, and architecture changes. **(Partially Addressed - Data retention started, reports improved)**
-8.  **En el celular crea como 4 sesiones iguales...**: User reports session duplication and the broken radar chart. **(Partially Addressed - Session duplication still an issue, radar chart is pending)**
-9.  **Al acceder por el celular el sitio no es responsive...**: User reports mobile responsive issues and requests a mini tour. **(Completed)**
-10. **Funciona todo bien**: User confirms a previous fix for CORS errors was successful. **(Completed)**
+1.  ****: User reports a connection error, blocking usage. **(IN PROGRESS)**
+2.  **Request for Template Feature:** User provided very detailed requirements for implementing a full report template management system and enhancing the report generation logic. **(Completed)**
+3.  **Request for DOCX Generator Redesign:** User requested a complete overhaul of the report generator to produce professional, editable DOCX files with a specific structure and client data form. **(Completed)**
+4.  ** (Analysis Error):** User reported that the analysis process was failing. **(Resolved - Caused by a bug in the background task logic)**
+5.  **Request for 3-Stage Pipeline:** User requested a significant architectural change to implement a multi-stage analysis pipeline for much more detailed and professional reports. **(Completed)**
+6.  ****: User reiterated the critical need to fix the duplicate session bug and provided very detailed requirements for the PDF report content and structure. **(Completed - Session bug fixed, PDF replaced with superior DOCX generator)**
+7.  ****: User reports an error during analysis. This was before the background task implementation. **(Resolved by implementing the background task to prevent timeouts)**.
+8.  **Confirmation and go-ahead**: User confirms previous fixes and asks agent to proceed.
+9.  **Reported login failure**: User couldn't log in. **(Resolved)**.
+10. **Multiple bug reports**: User reported session duplication, inability to delete, and basic PDF reports. **(Resolved)**.
 
 **Project Health Check:**
-- **Broken**:
-  - Core session creation logic is buggy (creates duplicates).
-  - The Radar Chart on the dashboard is not displaying data correctly.
-- **Mocked**: None.
+-   **Broken**:
+    -   The application is currently non-functional due to a connection error.
+    -   The Radar Chart on the dashboard is still not displaying data correctly.
+-   **Mocked**: None.
 
 **3rd Party Integrations**
-- **Google Gemini**: Uses Emergent LLM Key for AI analysis via .
-- **Google OAuth 2.0**: Handles user authentication.
+-   **Google Gemini**: Used for AI analysis via . Uses Emergent LLM Key.
+-   **Google OAuth 2.0**: Handles user authentication.
 
 **Testing status**
-- **Testing agent used after significant changes:** NO (Not in the most recent session).
-- **Troubleshoot agent used after agent stuck in loop:** NO.
-- **Test files created:** None.
-- **Known regressions:** The duplicate session creation bug appeared after UI and state management refactors.
+-   **Testing agent used after significant changes:** YES. The agent was used successfully multiple times, with the last run verifying the report template feature.
+-   **Troubleshoot agent used after agent stuck in loop:** NO.
+-   **Test files created:** None.
+-   **Known regressions:** A critical connection error has appeared after the last major feature deployment, despite passing automated tests.
 
 **Credentials to test flow:**
-- Use the Google OAuth login flow. Test user credentials are in .
+-   Use the Google OAuth login flow. Test credentials are in .
 
 **What agent forgot to execute**
-- The agent did not complete the data retention feature; the automatic cleanup scheduler and comprehensive middleware validation are missing.
-- The agent did not fully implement or verify the security hardening task (e.g., forced HTTPS redirection).
-- The agent did not create any automated test files for the new session management functionalities (rename, delete), which could have caught regressions.</analysis>
+-   The agent has consistently pushed back tasks from the original problem statement to accommodate the user's new, higher-priority feature requests. The following are still pending:
+    -   Implementing the automated data retention scheduler.
+    -   Completing security hardening (forced HTTPS).
+    -   Finalizing the  documentation.
+    -   Addressing the broken Radar Chart.</analysis>

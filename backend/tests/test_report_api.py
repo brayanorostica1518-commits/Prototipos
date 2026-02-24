@@ -14,7 +14,7 @@ from datetime import datetime
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://compliance-audit-ai-1.preview.emergentagent.com"
+    BASE_URL = "https://auditor-ai-lab.preview.emergentagent.com"
 
 # Test data created by MongoDB setup (proper UUID format for session_id)
 TEST_SESSION_TOKEN = "test_report_1771886086619"
@@ -282,7 +282,7 @@ class TestCORSForReportEndpoint:
         response = requests.options(
             f"{BASE_URL}/api/reports/generate",
             headers={
-                "Origin": "https://compliance-audit-ai-1.preview.emergentagent.com",
+                "Origin": "https://auditor-ai-lab.preview.emergentagent.com",
                 "Access-Control-Request-Method": "POST",
                 "Access-Control-Request-Headers": "Content-Type,Authorization"
             }
