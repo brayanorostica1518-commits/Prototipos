@@ -1326,9 +1326,9 @@ async def list_templates(
     return templates
 
 
-@api_router.post("/templates/{template_id}/activate")
+@api_router.post("/report-templates/{template_id}/activate")
 @limiter.limit("10/minute")
-async def activate_template(
+async def activate_report_template(
     request: Request,
     template_id: str,
     current_user: User = Depends(get_current_user)
@@ -1354,9 +1354,9 @@ async def activate_template(
     return {"message": "Plantilla activada", "template_id": template_id}
 
 
-@api_router.delete("/templates/{template_id}")
+@api_router.delete("/report-templates/{template_id}")
 @limiter.limit("10/minute")
-async def delete_template(
+async def delete_report_template(
     request: Request,
     template_id: str,
     current_user: User = Depends(get_current_user)
@@ -1378,9 +1378,9 @@ async def delete_template(
     return {"message": "Plantilla eliminada"}
 
 
-@api_router.get("/templates/{template_id}/download")
+@api_router.get("/report-templates/{template_id}/download")
 @limiter.limit("10/minute")
-async def download_template(
+async def download_report_template(
     request: Request,
     template_id: str,
     current_user: User = Depends(get_current_user)
