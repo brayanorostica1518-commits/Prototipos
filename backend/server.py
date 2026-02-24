@@ -1160,7 +1160,7 @@ async def generate_report(
 ):
     """
     Generate professional DOCX audit report.
-    Accepts client_info and session_id, returns downloadable DOCX.
+    Uses active template if available, otherwise base template.
     """
     try:
         session_id = data.get('session_id')
@@ -1168,9 +1168,7 @@ async def generate_report(
             raise HTTPException(status_code=400, detail="Invalid session ID")
 
         client_info = data.get('client_info', {})
-        output_format = data.get('format', 'docx')
 
-        # Verify session belongs to user
         session = await db.sessions.find_one({
             "id": session_id,
             "user_id": current_user.id
@@ -1178,7 +1176,6 @@ async def generate_report(
         if not session:
             raise HTTPException(status_code=403, detail="Session not found or access denied")
 
-        # Get analysis data (latest)
         analysis = await db.analysis_results.find_one(
             {"session_id": session_id, "user_id": current_user.id},
             {"_id": 0},
@@ -1187,13 +1184,12 @@ async def generate_report(
         if not analysis:
             raise HTTPException(status_code=404, detail="No analysis found for this session")
 
-        # Handle logo upload (base64 or file path)
+        # Handle logo
         logo_path = None
         logo_data = data.get('logo_base64')
         if logo_data:
             try:
                 import base64
-                # Remove data URL prefix if present
                 if ',' in logo_data:
                     logo_data = logo_data.split(',')[1]
                 logo_bytes = base64.b64decode(logo_data)
@@ -1203,12 +1199,25 @@ async def generate_report(
             except Exception as e:
                 logger.warning(f"Could not process logo: {e}")
 
-        # Generate DOCX
-        file_stream = generate_report_docx(
-            analysis_data=analysis,
-            client_info=client_info,
-            logo_path=str(logo_path) if logo_path else None
+        # Check for active template
+        active_template = await db.report_templates.find_one(
+            {"user_id": current_user.id, "active": True},
+            {"_id": 0}
         )
+
+        if active_template:
+            template_path = Path(active_template['file_path'])
+            if template_path.exists():
+                try:
+                    file_stream = render_custom_report(str(template_path), analysis, client_info)
+                    logger.info(f"Report rendered with custom template: {active_template['name']}")
+                except Exception as e:
+                    logger.warning(f"Custom template render failed, falling back: {e}")
+                    file_stream = render_base_report(analysis, client_info, str(logo_path) if logo_path else None)
+            else:
+                file_stream = render_base_report(analysis, client_info, str(logo_path) if logo_path else None)
+        else:
+            file_stream = render_base_report(analysis, client_info, str(logo_path) if logo_path else None)
 
         client_name = client_info.get('client_name', 'Cliente')
         safe_name = re.sub(r'[^\w\s-]', '', client_name).strip().replace(' ', '_')[:30]
@@ -1218,7 +1227,7 @@ async def generate_report(
         log_security_event("REPORT_GENERATED", {
             "session_id": session_id,
             "user_id": current_user.id,
-            "format": output_format,
+            "template": active_template['name'] if active_template else "base",
             "client_name": client_name
         })
 
@@ -1233,6 +1242,170 @@ async def generate_report(
     except Exception as e:
         logger.error(f"Error generating report: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error al generar informe: {str(e)}")
+
+
+# ==================== TEMPLATE MANAGEMENT ====================
+
+@api_router.post("/templates/upload")
+@limiter.limit("5/minute")
+async def upload_template(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload a custom DOCX/DOTX template."""
+    try:
+        original_name = sanitize_filename(file.filename or "template.docx")
+        ext = Path(original_name).suffix.lower()
+
+        if ext not in {'.docx', '.dotx'}:
+            raise HTTPException(status_code=400, detail="Solo se permiten archivos .docx o .dotx")
+
+        content = await file.read()
+        if len(content) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Archivo demasiado grande (máx 10MB)")
+
+        template_id = str(uuid.uuid4())
+        safe_name = f"{template_id}{ext}"
+        file_path = TEMPLATES_DIR / safe_name
+
+        with open(file_path, 'wb') as f:
+            f.write(content)
+
+        valid, msg = validate_template_file(str(file_path), original_name)
+        if not valid:
+            file_path.unlink(missing_ok=True)
+            raise HTTPException(status_code=400, detail=msg)
+
+        checksum = compute_checksum(str(file_path))
+
+        template_doc = {
+            "id": template_id,
+            "user_id": current_user.id,
+            "name": original_name,
+            "file_path": str(file_path),
+            "version": "1.0",
+            "active": False,
+            "checksum": checksum,
+            "size_bytes": len(content),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.report_templates.insert_one(template_doc)
+
+        log_security_event("TEMPLATE_UPLOADED", {
+            "template_id": template_id,
+            "user_id": current_user.id,
+            "name": original_name
+        })
+
+        return {
+            "id": template_id,
+            "name": original_name,
+            "checksum": checksum,
+            "message": "Plantilla cargada exitosamente"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error uploading template: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error al cargar plantilla: {str(e)}")
+
+
+@api_router.get("/templates")
+@limiter.limit("30/minute")
+async def list_templates(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """List user's uploaded templates."""
+    templates = await db.report_templates.find(
+        {"user_id": current_user.id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    return templates
+
+
+@api_router.post("/templates/{template_id}/activate")
+@limiter.limit("10/minute")
+async def activate_template(
+    request: Request,
+    template_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Activate a template (deactivates all others)."""
+    template = await db.report_templates.find_one({
+        "id": template_id,
+        "user_id": current_user.id
+    })
+    if not template:
+        raise HTTPException(status_code=404, detail="Plantilla no encontrada")
+
+    # Deactivate all
+    await db.report_templates.update_many(
+        {"user_id": current_user.id},
+        {"$set": {"active": False}}
+    )
+    # Activate selected
+    await db.report_templates.update_one(
+        {"id": template_id},
+        {"$set": {"active": True}}
+    )
+    return {"message": "Plantilla activada", "template_id": template_id}
+
+
+@api_router.delete("/templates/{template_id}")
+@limiter.limit("10/minute")
+async def delete_template(
+    request: Request,
+    template_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a template."""
+    template = await db.report_templates.find_one({
+        "id": template_id,
+        "user_id": current_user.id
+    })
+    if not template:
+        raise HTTPException(status_code=404, detail="Plantilla no encontrada")
+
+    # Delete file
+    file_path = Path(template.get('file_path', ''))
+    if file_path.exists():
+        file_path.unlink(missing_ok=True)
+
+    await db.report_templates.delete_one({"id": template_id})
+    return {"message": "Plantilla eliminada"}
+
+
+@api_router.get("/templates/{template_id}/download")
+@limiter.limit("10/minute")
+async def download_template(
+    request: Request,
+    template_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Download a template file."""
+    template = await db.report_templates.find_one({
+        "id": template_id,
+        "user_id": current_user.id
+    })
+    if not template:
+        raise HTTPException(status_code=404, detail="Plantilla no encontrada")
+
+    file_path = Path(template.get('file_path', ''))
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+
+    def iterfile():
+        with open(file_path, 'rb') as f:
+            yield from iter(lambda: f.read(8192), b'')
+
+    return StreamingResponse(
+        iterfile(),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{template["name"]}"'}
+    )
 
 
 @api_router.post("/export/word")
